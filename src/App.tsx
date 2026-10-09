@@ -191,7 +191,7 @@ export default function App() {
       </div>
       {dragging && <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }}>{getApp(dragging)?.icon || '▦'}<b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
-      {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button><span className="edit-hint">Tap an empty spot to finish</span></div>}
+      {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
     </section>
     <nav className="dock">{apps.filter(a => ['economy','court','music','settings'].includes(a.id)).map(a => <button key={a.id} onClick={() => launch(a.id)}><span className={'app-icon ' + a.tone}>{a.icon}</span></button>)}</nav>
