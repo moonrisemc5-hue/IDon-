@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Scale, Landmark, Music2, Settings as SettingsIcon, Smartphone, Plus,
   X, ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward,
@@ -69,7 +69,7 @@ export default function App() {
   const [dragged, setDragged] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const [now, setNow] = useState(new Date())
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => { localStorage.setItem('idon-wallpaper', wallpaper) }, [wallpaper])
   useEffect(() => { localStorage.setItem('idon-custom-wallpaper', customWallpaper) }, [customWallpaper])
@@ -80,14 +80,12 @@ export default function App() {
     return () => window.clearInterval(timer)
   }, [])
   useEffect(() => {
-    if (!audio) return
-    audio.volume = volume / 100
-  }, [audio, volume])
-  useEffect(() => {
-    if (!audio) return
-    if (playing) void audio.play().catch(() => setPlaying(false))
-    else audio.pause()
-  }, [audio, playing, track])
+    const player = audioRef.current
+    if (!player) return
+    player.volume = volume / 100
+    if (playing && activePanel === 'music') void player.play().catch(() => setPlaying(false))
+    else player.pause()
+  }, [activePanel, playing, track, volume])
 
   const currentSong = songs[track]
   const visibleApps = useMemo(() => apps.filter(a => (a.name + ' ' + a.subtitle).toLowerCase().includes(search.toLowerCase())), [apps, search])
@@ -184,7 +182,7 @@ export default function App() {
     {activePanel && <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) setActivePanel(null) }}><section className="modal">
       <div className="modal-head"><div className="modal-title">{activePanel === 'settings' ? <SettingsIcon size={19} /> : activePanel === 'music' ? <Music2 size={19} /> : <Smartphone size={19} />}<div><h2>{activePanel === 'settings' ? 'Settings' : activePanel === 'music' ? 'DaMusic' : 'Device Test'}</h2><p>{activePanel === 'settings' ? 'Personalize your IDon space' : activePanel === 'music' ? 'A small radio player for your workspace' : 'Your interface is ready'}</p></div></div><button className="icon-button" onClick={() => setActivePanel(null)} aria-label="Close"><X size={19} /></button></div>
       {activePanel === 'settings' && <div className="modal-body"><h3>Wallpaper</h3><p className="modal-copy">Choose a background. Your choice is saved in this browser.</p><div className="wallpaper-options">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-choice choice-' + w + (wallpaper === w ? ' active' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}><span />{w[0].toUpperCase() + w.slice(1)}</button>)}<label className={'wallpaper-choice upload-choice ' + (wallpaper === 'custom' ? 'active' : '')}><input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /><span><ImageIcon size={18} /></span>My image</label></div>{customWallpaper && <button className="danger-text" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}><Trash2 size={14} /> Remove custom image</button>}<div className="settings-note"><Smartphone size={18} /><div><b>Local preferences</b><p>Wallpaper, app order and folders are stored in this browser on this device.</p></div></div></div>}
-      {activePanel === 'music' && <div className="modal-body music-player"><div className="album-art"><Music2 size={44} /></div><p className="eyebrow">NOW PLAYING</p><h3>{currentSong.title}</h3><p className="modal-copy">{currentSong.artist}</p><audio key={currentSong.url} ref={el => setAudio(el)} src={currentSong.url} onEnded={() => setTrack(v => (v + 1) % songs.length)} /><div className="player-buttons"><button aria-label="Previous track" onClick={() => setTrack(v => (v - 1 + songs.length) % songs.length)}><SkipBack size={19} /></button><button className="play-button" aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying(v => !v)}>{playing ? <Pause size={21} /> : <Play size={21} />}</button><button aria-label="Next track" onClick={() => setTrack(v => (v + 1) % songs.length)}><SkipForward size={19} /></button></div><label className="volume-control"><Volume2 size={17} /><input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /><span>{volume}%</span></label><div className="song-list">{songs.map((song, i) => <button key={song.url} className={i === track ? 'current' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span className="song-index">{String(i + 1).padStart(2, '0')}</span><span><b>{song.title}</b><small>{song.artist}</small></span><Play size={14} /></button>)}</div><p className="fine-print">Demo audio streams are used here. Add your own licensed tracks when ready.</p></div>}
+      {activePanel === 'music' && <div className="modal-body music-player"><div className="album-art"><Music2 size={44} /></div><p className="eyebrow">NOW PLAYING</p><h3>{currentSong.title}</h3><p className="modal-copy">{currentSong.artist}</p><audio key={currentSong.url} ref={audioRef} src={currentSong.url} onEnded={() => setTrack(v => (v + 1) % songs.length)} /><div className="player-buttons"><button aria-label="Previous track" onClick={() => setTrack(v => (v - 1 + songs.length) % songs.length)}><SkipBack size={19} /></button><button className="play-button" aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying(v => !v)}>{playing ? <Pause size={21} /> : <Play size={21} />}</button><button aria-label="Next track" onClick={() => setTrack(v => (v + 1) % songs.length)}><SkipForward size={19} /></button></div><label className="volume-control"><Volume2 size={17} /><input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /><span>{volume}%</span></label><div className="song-list">{songs.map((song, i) => <button key={song.url} className={i === track ? 'current' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span className="song-index">{String(i + 1).padStart(2, '0')}</span><span><b>{song.title}</b><small>{song.artist}</small></span><Play size={14} /></button>)}</div><p className="fine-print">Demo audio streams are used here. Add your own licensed tracks when ready.</p></div>}
       {activePanel === 'device' && <div className="modal-body"><div className="device-check"><span><Smartphone size={26} /></span><h3>Device interface</h3><p>This independent IDon build is running in your browser.</p><div className="check-row"><span>Screen size</span><b>{window.innerWidth} × {window.innerHeight}</b></div><div className="check-row"><span>Browser storage</span><b>Available</b></div><button className="primary-button wide" onClick={() => notify('Everything looks good')}>Run quick check</button></div></div>}
     </section></div>}
 
