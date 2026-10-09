@@ -39,6 +39,8 @@ export default function App() {
   const [recentApps, setRecentApps] = useState<string[]>([])
   const [appSwitcher, setAppSwitcher] = useState(false)
   const [navVisible, setNavVisible] = useState(false)
+  const [dockApps, setDockApps] = useState<string[]>(() => read('daapps-dock', ['economy','court','music','settings']))
+  const [dockDeleting, setDockDeleting] = useState<string | null>(null)
   const navTimer = useRef<number | null>(null)
   const gestureStart = useRef<{x:number;y:number}|null>(null)
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
@@ -60,6 +62,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('daapps-slots', JSON.stringify(slots)) }, [slots])
   useEffect(() => { localStorage.setItem('daapps-pages', JSON.stringify(pages)) }, [pages])
   useEffect(() => { localStorage.setItem('daapps-folders', JSON.stringify(folders)) }, [folders])
+  useEffect(() => { localStorage.setItem('daapps-dock', JSON.stringify(dockApps)) }, [dockApps])
   useEffect(() => { localStorage.setItem('daapps-wallpaper', wallpaper) }, [wallpaper])
   useEffect(() => { localStorage.setItem('daapps-custom', customWallpaper) }, [customWallpaper])
   useEffect(() => {
@@ -124,8 +127,31 @@ export default function App() {
     setSlots(prev => { const next = [...prev]; next[i] = null; next[j] = id; return next })
     notify('Folder created')
   }
+  const deleteDockApp = (id: string) => { setDockDeleting(id); window.setTimeout(() => { setDockApps(prev => prev.filter(v => v !== id)); setSlots(prev => prev.map(v => v === id ? null : v)); setDockDeleting(null) }, 230) }
+  const startDockPress = (id: string, e: ReactPointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    longPress.current = false
+    pointer.current = { x: e.clientX, y: e.clientY }
+    pressTimer.current = window.setTimeout(() => {
+      longPress.current = true; setEdit(true)
+      dragSource.current = 'dock-' + id; dragTarget.current = 'dock-' + id
+      setDragging('dock-' + id); setDragPosition(pointer.current)
+    }, 480)
+  }
   const pointerMove = (e: React.PointerEvent) => {
     if (dragSource.current) {
+      if (dragSource.current.startsWith('dock-')) {
+        e.preventDefault()
+        pointer.current = {x:e.clientX,y:e.clientY}
+        setDragPosition({x:e.clientX,y:e.clientY})
+        const target = document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
+        const source = dragSource.current.slice(5)
+        if (target && target !== source && hoverTarget.current !== target) {
+          hoverTarget.current = target
+          setDockApps(prev => { const next=[...prev],a=next.indexOf(source),b=next.indexOf(target); if(a>=0&&b>=0){const [item]=next.splice(a,1);next.splice(b,0,item)} return next })
+        }
+        return
+      }
       e.preventDefault()
       pointer.current = { x: e.clientX, y: e.clientY }
       setDragPosition({ x: e.clientX, y: e.clientY })
@@ -188,6 +214,7 @@ export default function App() {
     clearPress()
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
+      if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
       if (to && to !== from && !to.startsWith('empty-')) {
         setSlots(prev => {
           const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
@@ -214,7 +241,7 @@ export default function App() {
     setPages(p => p - 1); setPage(p => Math.max(0, p - 1))
   }
   const saveRename = () => { if (rename) setFolders(prev => prev.map(f => f.id === rename ? { ...f, name: folderName.trim() || f.name } : f)); setRename(null) }
-  const deleteApp = (id: string) => { setDeletingId(id); window.setTimeout(() => { setSlots(prev => prev.map(v => v === id ? null : v)); setFolders(prev => prev.map(f => ({ ...f, apps: f.apps.filter(a => a !== id) })).filter(f => f.apps.length)); setRemoveId(null); setEdit(false); setDeletingId(null) }, 230) }
+  const deleteApp = (id: string) => { setDeletingId(id); window.setTimeout(() => { setSlots(prev => prev.map(v => v === id ? null : v)); setDockApps(prev => prev.filter(v => v !== id)); setFolders(prev => prev.map(f => ({ ...f, apps: f.apps.filter(a => a !== id) })).filter(f => f.apps.length)); setRemoveId(null); setEdit(false); setDeletingId(null) }, 230) }
   const uploadWallpaper = (file?: File) => {
     if (!file || !file.type.startsWith('image/')) return
     const reader = new FileReader()
@@ -225,7 +252,13 @@ export default function App() {
 
   return <main className={'da-shell wallpaper-' + wallpaper + (edit ? ' editing' : '')} style={shellStyle} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
     <button className="quick-arrow" aria-label="Control Center" onPointerDown={e => e.stopPropagation()} onClick={() => setControl(true)}>⌃</button>
-    <section className="home-viewport" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onContextMenu={e => e.preventDefault()}>
+    {currentApp && <section className="app-fullscreen" key={currentApp} onPointerDown={e => { if (e.clientY > window.innerHeight - 54) gestureStart.current = {x:e.clientX,y:e.clientY} }} onPointerUp={e => { if (gestureStart.current && gestureStart.current.y-e.clientY > 40) { if (gestureStart.current.y-e.clientY > 120) { setAppSwitcher(true); setNavVisible(false) } else showNav() } gestureStart.current=null }}>
+      <iframe title={getApp(currentApp)?.name || 'App'} src={getApp(currentApp)?.url} />
+      <button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button>
+      {navVisible && <div className="app-nav-controls"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button><button aria-label="Home" onClick={goHome}>○</button></div>}
+    </section>}
+    {appSwitcher && <div className="app-switcher" onClick={e => {if(e.target===e.currentTarget)setAppSwitcher(false)}}><div className="switcher-cards">{recentApps.map(id=>{const a=getApp(id);return a?<div className="recent-card" key={id}><button className="recent-close" onClick={()=>closeRecent(id)}>×</button><div className="recent-preview"><span className={'app-icon '+a.tone}>{a.icon}</span><b>{a.name}</b></div><button className="recent-open" onClick={()=>{setAppSwitcher(false);launch(id)}}>Open</button></div>:null})}</div><button className="switcher-home" onClick={goHome}>Home</button></div>}
+    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')}" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeDX.current + 'px))', transition: startX.current !== null && swipeDX.current !== 0 ? 'none' : 'transform .35s ease' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
           {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
@@ -234,16 +267,17 @@ export default function App() {
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
+            if (dragging === id) return <div key={id} className="drag-placeholder" data-slot={'empty-' + index} />
             return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
       </div>
-      {dragging && <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }}><span className={'app-icon ' + (getApp(dragging)?.tone || 'grey')}>{getApp(dragging)?.icon || '▦'}</span><b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
+      {dragging && <button className="app-tile live-drag-tile" style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging) ? <><span className={'app-icon '+getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.tone}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.icon}</span><b>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.name}</b></> : null}</button>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
     </section>
-    <nav className="dock">{apps.filter(a => ['economy','court','music','settings'].includes(a.id)).map(a => <button key={a.id} onClick={() => launch(a.id)}><span className={'app-icon ' + a.tone}>{a.icon}</span></button>)}</nav>
+    <nav className={'dock' + (edit ? ' dock-editing' : '')}>{dockApps.map(id=>{const a=getApp(id);return a?<button key={id} data-dock={id} className={dockDeleting===id?'deleting':''} onPointerDown={e=>startDockPress(id,e)} onClick={()=>{if(edit&&!dragging)deleteDockApp(id);else if(!edit&&!longPress.current)launch(id)}}><span className={'app-icon '+a.tone}>{a.icon}</span>{edit&&<span className="dock-remove" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();deleteDockApp(id)}}>−</span>}</button>:null})}</nav>
     {folderOpen && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setFolderOpen(null) }}><section className="folder-window"><header><b>{getFolder(folderOpen)?.name || 'Folder'}</b><div><button onClick={() => { setFolderName(getFolder(folderOpen)?.name || 'Folder'); setRename(folderOpen); setFolderOpen(null) }}>Rename</button><button onClick={() => setFolderOpen(null)}>×</button></div></header><div className="folder-apps">{(getFolder(folderOpen)?.apps || []).map(id => { const a = getApp(id); return a ? <button key={id} onClick={() => { setFolderOpen(null); launch(id) }}><span className={'app-icon ' + a.tone}>{a.icon}</span><b>{a.name}</b></button> : null })}</div></section></div>}
     {panel && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setPanel(null) }}><section className="panel-window"><header><div><b>{panel === 'music' ? 'DaMusic' : panel === 'settings' ? 'Settings' : 'DeviceTest'}</b><small>{panel === 'music' ? 'DaBoys Radio' : 'DaApps preferences'}</small></div><button onClick={() => setPanel(null)}>×</button></header>
       {panel === 'settings' && <div className="panel-content"><h3>Wallpaper</h3><p>Choose a look or use your own image. Your settings are saved on this device.</p><div className="wallpaper-list">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-swatch ' + w + (wallpaper === w ? ' selected' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}>{w}</button>)}<label className="wallpaper-swatch upload">＋ My image<input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /></label></div>{customWallpaper && <button className="remove-wall" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}>Remove custom image</button>}<p className="setting-note">{apps.length} apps · layout, folders and wallpaper saved locally</p></div>}
