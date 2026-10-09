@@ -211,14 +211,18 @@ export default function App() {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
         folderHoverTimer.current = null; hoverTarget.current = null; lastDragTarget.current = null
         if (target && target !== dragSource.current && target.startsWith('empty-')) {
-          const from=dragSource.current
-          setSlots(prev => {
-            const next=[...prev], a=next.indexOf(from!), b=Number(target.slice(6))
-            if(a>=0&&b>=0&&b<next.length&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)}
-            return next
-          })
-          lastDragTarget.current = target
-          dragTarget.current = null
+          if (folderSource.current) {
+            dragTarget.current = target
+          } else {
+            const from=dragSource.current
+            setSlots(prev => {
+              const next=[...prev], a=next.indexOf(from!), b=Number(target.slice(6))
+              if(a>=0&&b>=0&&b<next.length&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)}
+              return next
+            })
+            lastDragTarget.current = target
+            dragTarget.current = null
+          }
         }
       }
       return
