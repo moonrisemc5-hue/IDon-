@@ -199,21 +199,12 @@ export default function App() {
           hoverStart.current = { x: e.clientX, y: e.clientY }
           hoverMoved.current = false
           folderHoverTimer.current = window.setTimeout(() => {
-            if (dragSource.current && hoverTarget.current === target) {
-              if (hoverMoved.current) {
-                setSlots(prev => {
-                  const next=[...prev], a=next.indexOf(dragSource.current!), b=next.indexOf(target)
-                  if(a>=0&&b>=0&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)}
-                  return next
-                })
-                lastDragTarget.current = target
-              } else {
-                makeFolder(dragSource.current, target)
-                dragSource.current = null; dragTarget.current = null; setDragging(null)
-              }
+            if (dragSource.current && hoverTarget.current === target && apps.some(a => a.id === dragSource.current)) {
+              makeFolder(dragSource.current, target)
+              dragSource.current = null; dragTarget.current = null; setDragging(null)
             }
             folderHoverTimer.current = null
-          }, 300)
+          }, 500)
         }
         if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 18) hoverMoved.current = true
       } else {
@@ -275,7 +266,7 @@ export default function App() {
       if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
       pageFlipTimer.current = null
       setDragging(null)
-    } else if (startX.current !== null && !edit && Math.abs(swipeDX.current) > window.innerWidth * .12) {
+    } else if (startX.current !== null && Math.abs(swipeDX.current) > window.innerWidth * .12) {
       setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
     }
     startX.current = null; swipeDX.current = 0; setSwipeOffset(0)
@@ -302,7 +293,7 @@ export default function App() {
     <button className="quick-arrow" aria-label="Control Center" onPointerDown={e => e.stopPropagation()} onClick={() => setControl(true)}>⌃</button>
     {currentApp && <section className="app-fullscreen" key={currentApp}>
       <iframe title={getApp(currentApp)?.name || 'App'} src={getApp(currentApp)?.url} />
-      <div className="app-gesture-area" onPointerDown={e => { gestureStart.current={x:e.clientX,y:e.clientY} }} onPointerUp={e => { if(gestureStart.current && gestureStart.current.y-e.clientY>28){ if(gestureStart.current.y-e.clientY>115){setAppSwitcher(true);setNavVisible(false)}else showNav() } gestureStart.current=null }}>
+      <div className="app-gesture-area" onPointerDown={e => { gestureStart.current={x:e.clientX,y:e.clientY} }} onPointerUp={e => { if(gestureStart.current && gestureStart.current.y-e.clientY>24) showNav(); gestureStart.current=null }}>
         <button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button>
       </div>
       {navVisible && <div className="app-nav-controls"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button></div>}
@@ -333,7 +324,7 @@ export default function App() {
       {panel === 'settings' && <div className="panel-content"><h3>Wallpaper</h3><p>Choose a look or use your own image. Your settings are saved on this device.</p><div className="wallpaper-list">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-swatch ' + w + (wallpaper === w ? ' selected' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}>{w}</button>)}<label className="wallpaper-swatch upload">＋ My image<input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /></label></div>{customWallpaper && <button className="remove-wall" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}>Remove custom image</button>}<p className="setting-note">{apps.length} apps · layout, folders and wallpaper saved locally</p></div>}
       {panel === 'music' && <div className="panel-content music-content"><div className="record">♫</div><h2>{tracks[track].title}</h2><p>DaBoys Radio</p><audio ref={audioRef} src={tracks[track].url} onEnded={() => setTrack(t => (t + 1) % tracks.length)} /><div className="player-controls"><button onClick={() => setTrack(t => (t - 1 + tracks.length) % tracks.length)}>⏮</button><button className="play" onClick={() => setPlaying(v => !v)}>{playing ? 'Ⅱ' : '▶'}</button><button onClick={() => setTrack(t => (t + 1) % tracks.length)}>⏭</button></div><label className="volume">🔊 <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /> {volume}%</label><div className="track-list">{tracks.map((t,i) => <button key={t.url} className={track === i ? 'selected' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span>{String(i+1).padStart(2,'0')}</span><b>{t.title}</b><small>{track === i && playing ? 'Playing' : 'Play'}</small></button>)}</div></div>}
       {panel === 'device' && <div className="panel-content"><h3>Device Test</h3><p>Screen: {window.innerWidth} × {window.innerHeight}</p><p>Local storage: available</p><button className="done wide" onClick={() => notify('Device test passed')}>Run test</button></div>}
-    </section><div className="internal-gesture-area" onPointerDown={e => {gestureStart.current={x:e.clientX,y:e.clientY}}} onPointerUp={e => {if(gestureStart.current && gestureStart.current.y-e.clientY>80){setAppSwitcher(true);setNavVisible(false)}gestureStart.current=null}}><button className="app-home-indicator" aria-label="Show recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}><span /></button></div>{navVisible && <div className="app-nav-controls internal-nav"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button></div>}</div>}
+    </section><div className="internal-gesture-area" onPointerDown={e => {gestureStart.current={x:e.clientX,y:e.clientY}}} onPointerUp={e => {if(gestureStart.current && gestureStart.current.y-e.clientY>24) showNav();gestureStart.current=null}}><button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button></div>{navVisible && <div className="app-nav-controls internal-nav"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button><button aria-label="Home" onClick={goHome}>○</button></div>}</div>}
     {control && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setControl(false) }}><section className="control-window"><header><b>Control Center</b><button onClick={() => setControl(false)}>×</button></header><p>{new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p><label>🔊 Sound · {volume}%<input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /></label><p className="setting-note">DaApps is running</p></section></div>}
     {rename && <div className="veil"><section className="confirm-window"><h3>Rename folder</h3><input value={folderName} onChange={e => setFolderName(e.target.value)} autoFocus maxLength={24} onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setRename(null) }} /><footer><button onClick={() => setRename(null)}>Cancel</button><button className="done" onClick={saveRename}>Save</button></footer></section></div>}
     {removeId && <div className="veil"><section className="confirm-window"><h3>Remove {getApp(removeId)?.name}?</h3><p>It will be removed from this home screen.</p><footer><button onClick={() => setRemoveId(null)}>Cancel</button><button className="remove-confirm" onClick={() => deleteApp(removeId)}>Remove</button></footer></section></div>}
