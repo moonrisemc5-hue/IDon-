@@ -34,6 +34,7 @@ export default function App() {
   const [volume, setVolume] = useState(65)
   const [toast, setToast] = useState('')
   const [dragging, setDragging] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
   const audioRef = useRef<HTMLAudioElement>(null)
   const pressTimer = useRef<number | null>(null)
@@ -200,7 +201,7 @@ export default function App() {
     setPages(p => p - 1); setPage(p => Math.max(0, p - 1))
   }
   const saveRename = () => { if (rename) setFolders(prev => prev.map(f => f.id === rename ? { ...f, name: folderName.trim() || f.name } : f)); setRename(null) }
-  const deleteApp = (id: string) => { setSlots(prev => prev.map(v => v === id ? null : v)); setFolders(prev => prev.map(f => ({ ...f, apps: f.apps.filter(a => a !== id) })).filter(f => f.apps.length)); setRemoveId(null); setEdit(false) }
+  const deleteApp = (id: string) => { setDeletingId(id); window.setTimeout(() => { setSlots(prev => prev.map(v => v === id ? null : v)); setFolders(prev => prev.map(f => ({ ...f, apps: f.apps.filter(a => a !== id) })).filter(f => f.apps.length)); setRemoveId(null); setEdit(false); setDeletingId(null) }, 230) }
   const uploadWallpaper = (file?: File) => {
     if (!file || !file.type.startsWith('image/')) return
     const reader = new FileReader()
@@ -220,7 +221,7 @@ export default function App() {
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
-            return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
+            return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
       </div>
