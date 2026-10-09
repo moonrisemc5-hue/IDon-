@@ -125,3 +125,18 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .dock-editing button:nth-child(2n){animation-delay:-.1s}
 .dock button.deleting{animation:delete-pop .23s ease forwards}
 @media(prefers-reduced-motion:reduce){.app-fullscreen,.app-switcher,.recent-card,.app-nav-controls,.drag-placeholder,.live-drag-tile{animation:none!important}}
+
+/* Slower, softer motion for home-screen organization */
+.page-track{transition:transform .58s cubic-bezier(.22,.8,.25,1)}
+.app-grid .app-tile,.app-tile:not(.dragging){transition:transform .48s cubic-bezier(.22,.8,.25,1),filter .48s,opacity .42s}
+.editing .app-tile{animation:icon-jiggle .5s ease-in-out infinite alternate;transition:transform .48s cubic-bezier(.22,.8,.25,1),filter .48s,opacity .42s}
+.empty-slot,.drag-placeholder{transition:background .48s cubic-bezier(.22,.8,.25,1),box-shadow .48s,transform .48s,opacity .42s}
+.folder-window{animation:window-pop .42s cubic-bezier(.22,.8,.25,1) both}
+.folder-apps button{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .42s,filter .42s}
+.folder-apps button:active{transform:scale(.94)}
+.app-fullscreen{animation-duration:.72s}
+.internal-veil .panel-window{animation-duration:.72s}
+.app-switcher{animation-duration:.5s}
+.recent-card{animation-duration:.48s}
+.dock button{transition:transform .4s cubic-bezier(.22,.8,.25,1),opacity .4s}
+.page-indicators button{transition:width .38s cubic-bezier(.22,.8,.25,1),background .38s}
