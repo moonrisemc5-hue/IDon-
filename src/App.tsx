@@ -171,7 +171,7 @@ export default function App() {
             const index = p * PAGE_SIZE + i
             const a = getApp(id), f = getFolder(id)
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} />
-            if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => { if (edit) startAppPress(id, e); else { startX.current = null; setFolderOpen(id) } }} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
+            if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
             return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
