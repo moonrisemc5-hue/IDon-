@@ -207,10 +207,21 @@ export default function App() {
           hoverMoved.current = false
           folderHoverTimer.current = window.setTimeout(() => {
             if (dragSource.current && hoverTarget.current === target && apps.some(a => a.id === dragSource.current)) {
-              folderReadyTarget.current = target
+              if (hoverMoved.current) {
+                const from = dragSource.current
+                setSlots(prev => {
+                  const next = [...prev], a = next.indexOf(from), b = next.indexOf(target)
+                  if (a >= 0 && b >= 0 && a !== b) [next[a], next[b]] = [next[b], next[a]]
+                  return next
+                })
+                lastDragTarget.current = target
+                folderReadyTarget.current = null
+              } else {
+                folderReadyTarget.current = target
+              }
             }
             folderHoverTimer.current = null
-          }, 500)
+          }, 360)
         }
         if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 18) hoverMoved.current = true
       } else {
