@@ -62,6 +62,7 @@ export default function App() {
   const hoverMoved = useRef(false)
   const pageFlipTimer = useRef<number | null>(null)
   const lastDragTarget = useRef<string | null>(null)
+  const folderReadyTarget = useRef<string | null>(null)
 
   useEffect(() => { localStorage.setItem('daapps-slots', JSON.stringify(slots)) }, [slots])
   useEffect(() => { localStorage.setItem('daapps-pages', JSON.stringify(pages)) }, [pages])
@@ -200,8 +201,7 @@ export default function App() {
           hoverMoved.current = false
           folderHoverTimer.current = window.setTimeout(() => {
             if (dragSource.current && hoverTarget.current === target && apps.some(a => a.id === dragSource.current)) {
-              makeFolder(dragSource.current, target)
-              dragSource.current = null; dragTarget.current = null; setDragging(null)
+              folderReadyTarget.current = target
             }
             folderHoverTimer.current = null
           }, 500)
@@ -209,7 +209,7 @@ export default function App() {
         if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 18) hoverMoved.current = true
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
-        folderHoverTimer.current = null; hoverTarget.current = null; lastDragTarget.current = null
+        folderHoverTimer.current = null; hoverTarget.current = null; folderReadyTarget.current = null; lastDragTarget.current = null
         if (target && target !== dragSource.current && target.startsWith('empty-')) {
           if (folderSource.current) {
             dragTarget.current = target
@@ -258,13 +258,16 @@ export default function App() {
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
-      if (to && to !== from && !to.startsWith('empty-') && lastDragTarget.current !== to) {
+      if (folderReadyTarget.current && folderReadyTarget.current === to && apps.some(a => a.id === from) && apps.some(a => a.id === to)) {
+        makeFolder(from, to)
+      } else if (to && to !== from && !to.startsWith('empty-') && lastDragTarget.current !== to) {
         setSlots(prev => {
           const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
           if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
           return next
         })
       }
+      folderReadyTarget.current = null
       dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
       if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
       if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
