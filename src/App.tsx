@@ -53,6 +53,7 @@ export default function App() {
   const startX = useRef<number | null>(null)
   const swipeDX = useRef(0)
   const dragSource = useRef<string | null>(null)
+  const folderSource = useRef<string | null>(null)
   const dragTarget = useRef<string | null>(null)
   const folderHoverTimer = useRef<number | null>(null)
   const hoverTarget = useRef<string | null>(null)
@@ -107,6 +108,22 @@ export default function App() {
       dragSource.current = id
       dragTarget.current = id
       setDragging(id)
+    }, 480)
+  }
+  const startFolderAppPress = (folderId: string, appId: string, e: ReactPointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    longPress.current = false
+    pointer.current = { x: e.clientX, y: e.clientY }
+    clearPress()
+    pressTimer.current = window.setTimeout(() => {
+      longPress.current = true
+      folderSource.current = folderId
+      dragSource.current = appId
+      dragTarget.current = null
+      setFolderOpen(null)
+      setEdit(true)
+      setDragging(appId)
+      setDragPosition(pointer.current)
     }, 480)
   }
   const startEmptyPress = (e: ReactPointerEvent) => {
@@ -215,7 +232,7 @@ export default function App() {
       }
       return
     }
-    if (startX.current !== null && !edit) {
+    if (startX.current !== null && !dragSource.current) {
       const dx = e.clientX - startX.current
       swipeDX.current = dx
       setSwipeOffset(dx)
@@ -224,6 +241,25 @@ export default function App() {
   }
   const pointerUp = () => {
     clearPress()
+    if (folderSource.current && dragSource.current) {
+      const from = dragSource.current
+      const folderId = folderSource.current
+      const target = dragTarget.current
+      const destination = target && target.startsWith('empty-') ? Number(target.slice(6)) : -1
+      setFolders(prev => prev.map(f => f.id === folderId ? { ...f, apps: f.apps.filter(id => id !== from) } : f).filter(f => f.apps.length))
+      setSlots(prev => {
+        const next = [...prev]
+        let index = destination
+        if (index < 0 || index >= next.length || next[index] !== null) index = next.indexOf(null)
+        if (index < 0) next.push(from); else next[index] = from
+        return next
+      })
+      folderSource.current = null
+      dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
+      setDragging(null); setEdit(false); setSwipeOffset(0)
+      if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
+      return
+    }
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
@@ -239,12 +275,12 @@ export default function App() {
       if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
       pageFlipTimer.current = null
       setDragging(null)
-    } else if (startX.current !== null && Math.abs(swipeDX.current) > window.innerWidth * .12) {
+    } else if (startX.current !== null && !edit && Math.abs(swipeDX.current) > window.innerWidth * .12) {
       setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
     }
     startX.current = null; swipeDX.current = 0; setSwipeOffset(0)
   }
-  const addPage = () => { setSlots(prev => [...prev, ...Array(PAGE_SIZE).fill(null)]); setPages(p => p + 1); setPage(p => p + 1) }
+  const addPage = () => { setSlots(prev => [...prev, ...Array(PAGE_SIZE).fill(null)]); setPages(p => p + 1); setPage(p => p + 1); setEdit(false); startX.current = null; swipeDX.current = 0; setSwipeOffset(0) }
   const removePage = () => {
     if (page <= 0 || pages <= 1) return
     const start = page * PAGE_SIZE
@@ -266,13 +302,13 @@ export default function App() {
     <button className="quick-arrow" aria-label="Control Center" onPointerDown={e => e.stopPropagation()} onClick={() => setControl(true)}>⌃</button>
     {currentApp && <section className="app-fullscreen" key={currentApp}>
       <iframe title={getApp(currentApp)?.name || 'App'} src={getApp(currentApp)?.url} />
-      <div className="app-gesture-area" onPointerDown={e => { gestureStart.current={x:e.clientX,y:e.clientY} }} onPointerUp={e => { if(gestureStart.current && gestureStart.current.y-e.clientY>40){ if(gestureStart.current.y-e.clientY>120){setAppSwitcher(true);setNavVisible(false)}else showNav() } gestureStart.current=null }}>
+      <div className="app-gesture-area" onPointerDown={e => { gestureStart.current={x:e.clientX,y:e.clientY} }} onPointerUp={e => { if(gestureStart.current && gestureStart.current.y-e.clientY>28){ if(gestureStart.current.y-e.clientY>115){setAppSwitcher(true);setNavVisible(false)}else showNav() } gestureStart.current=null }}>
         <button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button>
       </div>
       {navVisible && <div className="app-nav-controls"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button></div>}
     </section>}
     {appSwitcher && <div className="app-switcher" onClick={e => {if(e.target===e.currentTarget)goHome()}}><div className="switcher-cards">{recentApps.map(id=>{const a=getApp(id);return a?<div role="button" tabIndex={0} className={'recent-card' + (closingRecent===id?' closing':'')} key={id} onPointerDown={e=>{(e.currentTarget as HTMLElement).dataset.startY=String(e.clientY);suppressSwitcherClick.current=false}} onPointerUp={e=>{const y=Number((e.currentTarget as HTMLElement).dataset.startY||0);if(y-e.clientY>65){suppressSwitcherClick.current=true;closeRecent(id)}}} onClick={()=>{if(suppressSwitcherClick.current){suppressSwitcherClick.current=false;return}setAppSwitcher(false);launch(id)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setAppSwitcher(false);launch(id)}}}><div className="recent-preview"><span className={'app-icon '+a.tone}>{a.icon}</span><b>{a.name}</b><small>Tap to open</small></div></div>:null})}</div></div>}
-    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (!edit && !dragging) { startX.current = e.clientX; swipeDX.current = 0; setSwipeOffset(0); try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} } }} onContextMenu={e => e.preventDefault()}>
+    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (!dragging) { startX.current = e.clientX; swipeDX.current = 0; setSwipeOffset(0); try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} } }} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeOffset + 'px))', transition: startX.current !== null && swipeOffset !== 0 ? 'none' : 'transform .35s cubic-bezier(.22,.8,.25,1)' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
           {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
@@ -292,7 +328,7 @@ export default function App() {
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
     </section>
     <nav className={'dock' + (edit ? ' dock-editing' : '')}>{dockApps.map(id=>{const a=getApp(id);return a?<button key={id} data-dock={id} className={(dockDeleting===id?'deleting ':'')+(dragging==='dock-'+id?'dock-source-hidden':'')} onPointerDown={e=>startDockPress(id,e)} onClick={()=>{if(!edit&&!longPress.current)launch(id)}}><span className={'app-icon '+a.tone}>{a.icon}</span>{edit&&<span className="dock-remove" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();deleteDockApp(id)}}>−</span>}</button>:null})}</nav>
-    {folderOpen && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setFolderOpen(null) }}><section className="folder-window"><header><b>{getFolder(folderOpen)?.name || 'Folder'}</b><div><button onClick={() => { setFolderName(getFolder(folderOpen)?.name || 'Folder'); setRename(folderOpen); setFolderOpen(null) }}>Rename</button><button onClick={() => setFolderOpen(null)}>×</button></div></header><div className="folder-apps">{(getFolder(folderOpen)?.apps || []).map(id => { const a = getApp(id); return a ? <button key={id} onClick={() => { setFolderOpen(null); launch(id) }}><span className={'app-icon ' + a.tone}>{a.icon}</span><b>{a.name}</b></button> : null })}</div></section></div>}
+    {folderOpen && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setFolderOpen(null) }}><section className="folder-window"><header><b>{getFolder(folderOpen)?.name || 'Folder'}</b><div><button onClick={() => { setFolderName(getFolder(folderOpen)?.name || 'Folder'); setRename(folderOpen); setFolderOpen(null) }}>Rename</button><button onClick={() => setFolderOpen(null)}>×</button></div></header><div className="folder-apps">{(getFolder(folderOpen)?.apps || []).map(id => { const a = getApp(id); return a ? <button key={id} onPointerDown={e => startFolderAppPress(folderOpen, id, e)} onClick={() => { if (longPress.current || dragging) { longPress.current = false; return } setFolderOpen(null); launch(id) }}><span className={'app-icon ' + a.tone}>{a.icon}</span><b>{a.name}</b></button> : null })}</div></section></div>}
     {panel && <div className="veil internal-veil" onPointerDown={e => { if (e.target === e.currentTarget) goHome() }}><section className="panel-window"><header><div><b>{panel === 'music' ? 'DaMusic' : panel === 'settings' ? 'Settings' : 'DeviceTest'}</b><small>{panel === 'music' ? 'DaBoys Radio' : 'DaApps preferences'}</small></div><button onClick={() => setPanel(null)}>×</button></header>
       {panel === 'settings' && <div className="panel-content"><h3>Wallpaper</h3><p>Choose a look or use your own image. Your settings are saved on this device.</p><div className="wallpaper-list">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-swatch ' + w + (wallpaper === w ? ' selected' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}>{w}</button>)}<label className="wallpaper-swatch upload">＋ My image<input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /></label></div>{customWallpaper && <button className="remove-wall" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}>Remove custom image</button>}<p className="setting-note">{apps.length} apps · layout, folders and wallpaper saved locally</p></div>}
       {panel === 'music' && <div className="panel-content music-content"><div className="record">♫</div><h2>{tracks[track].title}</h2><p>DaBoys Radio</p><audio ref={audioRef} src={tracks[track].url} onEnded={() => setTrack(t => (t + 1) % tracks.length)} /><div className="player-controls"><button onClick={() => setTrack(t => (t - 1 + tracks.length) % tracks.length)}>⏮</button><button className="play" onClick={() => setPlaying(v => !v)}>{playing ? 'Ⅱ' : '▶'}</button><button onClick={() => setTrack(t => (t + 1) % tracks.length)}>⏭</button></div><label className="volume">🔊 <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /> {volume}%</label><div className="track-list">{tracks.map((t,i) => <button key={t.url} className={track === i ? 'selected' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span>{String(i+1).padStart(2,'0')}</span><b>{t.title}</b><small>{track === i && playing ? 'Playing' : 'Play'}</small></button>)}</div></div>}
