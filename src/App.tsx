@@ -115,6 +115,7 @@ export default function App() {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPress.current = false
     pointer.current = { x: e.clientX, y: e.clientY }
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
     clearPress()
     pressTimer.current = window.setTimeout(() => {
       longPress.current = true
