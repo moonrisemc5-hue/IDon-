@@ -33,31 +33,31 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .folder-icon{width:clamp(42px,6.7vh,54px);height:clamp(42px,6.7vh,54px);padding:6px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4px;border-radius:17px;background:#ffffff21;border:1px solid #ffffff26;box-shadow:0 7px 19px #0003,inset 0 1px #ffffff30;backdrop-filter:blur(12px)}
 .folder-mini{display:grid;place-items:center;border-radius:6px;font-style:normal;font-size:13px;font-weight:700}
 .folder-mini.gold{background:linear-gradient(145deg,#f9c95f,#c87826)}.folder-mini.blue{background:linear-gradient(145deg,#70b9ff,#3155b8)}.folder-mini.pink{background:linear-gradient(145deg,#ff8ac6,#9c42b7)}.folder-mini.grey{background:linear-gradient(145deg,#9ba9bd,#46546c)}.folder-mini.green{background:linear-gradient(145deg,#77e7bd,#168a7b)}
-.editing .app-tile{animation:icon-jiggle .32s ease-in-out infinite alternate;transform-origin:50% 50%;transition:margin .22s cubic-bezier(.2,.8,.2,1),filter .22s,opacity .18s}
+.editing .app-tile{animation:icon-jiggle .32s ease-in-out infinite alternate;transform-origin:50% 50%;transition:margin .42s cubic-bezier(.22,.8,.25,1),filter .38s,opacity .35s}
 .editing .app-tile:nth-child(3n){animation-delay:-.13s}.editing .app-tile:nth-child(2n){animation-delay:-.07s}
 @keyframes icon-jiggle{from{transform:rotate(-1deg)}to{transform:rotate(1deg)}}
 @keyframes lift-icon{from{opacity:.6;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-58%) scale(1.08) rotate(-2deg)}}
-.app-tile:not(.dragging){transition:transform .2s cubic-bezier(.2,.8,.2,1),filter .2s}
-.app-grid .app-tile{transition:transform .24s cubic-bezier(.2,.8,.2,1),filter .24s,opacity .2s}
+.app-tile:not(.dragging){transition:transform .42s cubic-bezier(.22,.8,.25,1),filter .38s}
+.app-grid .app-tile{transition:transform .44s cubic-bezier(.22,.8,.25,1),filter .4s,opacity .38s}
 .app-tile:active .app-icon{filter:brightness(1.08)}
 .remove-app{transition:transform .18s cubic-bezier(.2,.8,.2,1),background .18s}.remove-app:active{transform:scale(.8)}
-.remove-confirm{transition:transform .18s,opacity .18s}.confirm-window{animation:window-pop .22s cubic-bezier(.2,.8,.2,1) both}
+.remove-confirm{transition:transform .18s,opacity .18s}.confirm-window{animation:window-pop .38s cubic-bezier(.22,.8,.25,1) both}
 @keyframes window-pop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 .remove-app{position:absolute;z-index:2;top:-4px;left:calc(50% - 33px);width:22px;height:22px;border-radius:50%;background:#e7eaf1;color:#273147;font-size:19px;line-height:18px;font-weight:700;box-shadow:0 2px 7px #0006;border:1px solid #ffffffaa;display:grid;place-items:center;animation:none}
 .dragging{opacity:.24;transform:scale(.88)!important;animation:none!important;filter:saturate(.65)}
 .app-tile.deleting{animation:delete-pop .23s cubic-bezier(.4,0,.8,.3) forwards!important;pointer-events:none}
 @keyframes delete-pop{0%{opacity:1;transform:scale(1) rotate(0)}45%{opacity:.8;transform:scale(1.13) rotate(5deg)}100%{opacity:0;transform:scale(.15) rotate(-12deg);filter:blur(3px)}}
-.drag-ghost{position:fixed;z-index:30;width:62px;height:62px;border-radius:19px;background:#ffffff22;backdrop-filter:blur(18px) saturate(150%);border:1px solid #ffffff55;box-shadow:0 17px 42px #0008,0 3px 9px #0004;display:grid;place-items:center;pointer-events:none;transform:translate(-50%,-58%) scale(1.08) rotate(-2deg);animation:lift-icon .18s cubic-bezier(.18,.8,.2,1) both}.drag-ghost .app-icon{width:52px;height:52px;border-radius:15px;font-size:27px;box-shadow:0 6px 16px #0004}
+.drag-ghost{position:fixed;z-index:30;width:62px;height:62px;border-radius:19px;background:#ffffff22;backdrop-filter:blur(18px) saturate(150%);border:1px solid #ffffff55;box-shadow:0 17px 42px #0008,0 3px 9px #0004;display:grid;place-items:center;pointer-events:none;transform:translate(-50%,-58%) scale(1.08) rotate(-2deg);animation:lift-icon .32s cubic-bezier(.22,.8,.25,1) both}.drag-ghost .app-icon{width:52px;height:52px;border-radius:15px;font-size:27px;box-shadow:0 6px 16px #0004}
 .drag-ghost b{position:absolute;top:61px;font-size:11px;white-space:nowrap;text-shadow:0 1px 5px #000}
 .page-indicators{display:flex;align-items:center;justify-content:center;gap:8px;min-height:26px;padding:0 0 5px}
-.page-indicators button{height:6px;width:6px;border-radius:50%;border:0;padding:0;background:#ffffff60;transition:width .2s,background .2s}
+.page-indicators button{height:6px;width:6px;border-radius:50%;border:0;padding:0;background:#ffffff60;transition:width .38s cubic-bezier(.22,.8,.25,1),background .35s}
 .page-indicators button.active{width:19px;border-radius:8px;background:#fff}
 .gesture-hint{text-align:center;font-size:11px;letter-spacing:.1px;color:#ffffff8c;margin:2px 12px 10px}
 .edit-actions{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;padding:6px 12px 10px}.edit-hint{font-size:10px;color:#ffffff90;padding:6px}
 .edit-actions button,.done,.panel-content button,.folder-window header button,.confirm-window footer button{border:1px solid #ffffff1d;background:#ffffff12;border-radius:13px;padding:10px 13px;font-size:12px;font-weight:650}
 .edit-actions .done,.done{background:#f4f6ff;color:#1a2133;border-color:#ffffff}
 .dock{position:relative;z-index:2;align-self:center;width:min(calc(100% - 42px),410px);min-height:70px;margin:6px auto max(10px,env(safe-area-inset-bottom));padding:8px 16px;display:flex;align-items:center;justify-content:space-around;gap:13px;border-radius:27px;background:#ffffff1b;border:1px solid #ffffff2a;box-shadow:0 12px 35px #0002,inset 0 1px #ffffff18;backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%)}
-.dock button{padding:0;border:0;background:transparent;display:grid;place-items:center;border-radius:17px;transition:transform .15s}
+.dock button{padding:0;border:0;background:transparent;display:grid;place-items:center;border-radius:17px;transition:transform .32s cubic-bezier(.22,.8,.25,1)}
 .dock button:active{transform:scale(.9)}.dock .app-icon{width:47px;height:47px;border-radius:14px;font-size:23px}
 .veil{position:fixed;inset:0;z-index:40;background:#05081491;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);display:flex;align-items:center;justify-content:center;padding:24px 18px}
 .folder-window,.panel-window,.control-window,.confirm-window{width:min(100%,440px);max-height:min(80vh,740px);overflow:auto;border:1px solid #ffffff28;border-radius:28px;background:linear-gradient(145deg,#252b40f5,#161c30f5);box-shadow:0 28px 90px #0008,inset 0 1px #ffffff1b;color:#f8f9ff}
@@ -114,7 +114,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .recent-preview{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}.recent-preview .app-icon{width:70px;height:70px;font-size:34px;border-radius:20px}.recent-preview b{font-size:15px}
 .recent-open{display:none}
 .switcher-home{display:none}
-.drag-placeholder{min-width:0;min-height:0;border-radius:17px;background:#ffffff0c;border:1px dashed #ffffff24;animation:slot-expand .2s cubic-bezier(.18,.75,.25,1) both}
+.drag-placeholder{min-width:0;min-height:0;border-radius:17px;background:#ffffff0c;border:1px dashed #ffffff24;animation:slot-expand .4s cubic-bezier(.22,.8,.25,1) both}
 @keyframes slot-expand{from{opacity:.2;transform:scale(.78)}to{opacity:1;transform:scale(1)}}
 .live-drag-tile{position:fixed!important;z-index:80!important;left:0;top:0;transform:translate(-50%,-60%) scale(1.08) rotate(-2deg)!important;opacity:1!important;animation:lift-icon .18s cubic-bezier(.18,.8,.2,1) both;pointer-events:none!important;filter:drop-shadow(0 18px 18px #0007)}
 .live-drag-tile .app-icon{width:54px;height:54px;border-radius:16px}
@@ -140,3 +140,8 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .recent-card{animation-duration:.48s}
 .dock button{transition:transform .4s cubic-bezier(.22,.8,.25,1),opacity .4s}
 .page-indicators button{transition:width .38s cubic-bezier(.22,.8,.25,1),background .38s}
+
+/* Slower, more deliberate iPhone-style organizing */
+.app-grid .app-tile,.empty-slot,.drag-placeholder,.folder-apps button,.dock button{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .38s ease,filter .38s ease,margin .42s cubic-bezier(.22,.8,.25,1)}
+.drag-placeholder{background:#ffffff14;border-color:#c6d8ff66;transform:scale(.98)}
+.recent-card{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .38s ease}
