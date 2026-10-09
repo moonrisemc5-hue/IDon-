@@ -1,17 +1,17 @@
 {
-  "id": "/IDon-/",
+  "id": "https://moonrisemc5-hue.github.io/IDon-/",
   "name": "IDon",
   "short_name": "IDon",
   "description": "DaBoys apps hub",
-  "start_url": "/IDon-/",
-  "scope": "/IDon-/",
+  "start_url": "https://moonrisemc5-hue.github.io/IDon/",
+  "scope": "https://moonrisemc5-hue.github.io/IDon-/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b101b",
   "theme_color": "#111827",
   "icons": [
     {
-      "src": "/IDon-/favicon.svg",
+      "src": "https://moonrisemc5-hue.github.io/IDon-/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
