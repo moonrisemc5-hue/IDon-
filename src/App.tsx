@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
 type AppId = 'economy' | 'court' | 'music' | 'settings' | 'device'
 type AppInfo = { id: AppId; name: string; icon: string; tone: string; url?: string }
@@ -71,7 +71,7 @@ export default function App() {
     setPanel(a.id as 'settings' | 'music' | 'device')
   }
   const clearPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current); pressTimer.current = null }
-  const startAppPress = (id: string, e: React.PointerEvent) => {
+  const startAppPress = (id: string, e: ReactPointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPress.current = false
     pointer.current = { x: e.clientX, y: e.clientY }
@@ -101,7 +101,7 @@ export default function App() {
       const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
       const target = targetEl?.dataset.slot || null
       dragTarget.current = target
-      if (target && target !== dragSource.current && !target.startsWith('folder-') && !dragSource.current.startsWith('folder-')) {
+      if (target && target !== dragSource.current && apps.some(a => a.id === target) && apps.some(a => a.id === dragSource.current)) {
         if (hoverTarget.current !== target) {
           if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
           hoverTarget.current = target
