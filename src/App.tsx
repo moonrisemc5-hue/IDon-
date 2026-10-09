@@ -45,6 +45,7 @@ export default function App() {
   const navTimer = useRef<number | null>(null)
   const gestureStart = useRef<{x:number;y:number}|null>(null)
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
+  const [swipeOffset, setSwipeOffset] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
   const pressTimer = useRef<number | null>(null)
   const longPress = useRef(false)
@@ -216,6 +217,7 @@ export default function App() {
     if (startX.current !== null && !edit) {
       const dx = e.clientX - startX.current
       swipeDX.current = dx
+      setSwipeOffset(dx)
       if (Math.abs(dx) > 10) clearPress()
     }
   }
@@ -239,7 +241,7 @@ export default function App() {
     } else if (startX.current !== null && Math.abs(swipeDX.current) > window.innerWidth * .2) {
       setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
     }
-    startX.current = null; swipeDX.current = 0
+    startX.current = null; swipeDX.current = 0; setSwipeOffset(0)
   }
   const addPage = () => { setSlots(prev => [...prev, ...Array(PAGE_SIZE).fill(null)]); setPages(p => p + 1); setPage(p => p + 1) }
   const removePage = () => {
@@ -269,8 +271,8 @@ export default function App() {
       {navVisible && <div className="app-nav-controls"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button><button aria-label="Home" onClick={goHome}>○</button></div>}
     </section>}
     {appSwitcher && <div className="app-switcher" onClick={e => {if(e.target===e.currentTarget)setAppSwitcher(false)}}><div className="switcher-cards">{recentApps.map(id=>{const a=getApp(id);return a?<div className={'recent-card' + (closingRecent===id?' closing':'')} key={id} onTouchStart={e=>{(e.currentTarget as HTMLElement).dataset.startY=String(e.touches[0].clientY)}} onTouchEnd={e=>{const y=Number((e.currentTarget as HTMLElement).dataset.startY||0);if(y-e.changedTouches[0].clientY>55)closeRecent(id)}}><button className="recent-close" onClick={()=>closeRecent(id)}>×</button><div className="recent-preview"><span className={'app-icon '+a.tone}>{a.icon}</span><b>{a.name}</b></div><button className="recent-open" onClick={()=>{setAppSwitcher(false);launch(id)}}>Open</button></div>:null})}</div><button className="switcher-home" onClick={goHome}>Home</button></div>}
-    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onContextMenu={e => e.preventDefault()}>
-      <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeDX.current + 'px))', transition: startX.current !== null && swipeDX.current !== 0 ? 'none' : 'transform .35s ease' }}>
+    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (!edit && !dragging) { startX.current = e.clientX; swipeDX.current = 0; setSwipeOffset(0); try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} } }} onContextMenu={e => e.preventDefault()}>
+      <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeOffset + 'px))', transition: startX.current !== null && swipeOffset !== 0 ? 'none' : 'transform .35s cubic-bezier(.22,.8,.25,1)' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
           {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
             const index = p * PAGE_SIZE + i
