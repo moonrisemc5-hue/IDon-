@@ -88,3 +88,35 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 @media(min-width:650px){.status-bar{display:none}.home-page{padding-top:24px}.app-grid{grid-template-rows:repeat(6,minmax(0,1fr));gap:6px 10px;max-width:540px}.app-icon{width:63px;height:63px;border-radius:19px;font-size:31px}.folder-icon{width:63px;height:63px;border-radius:19px}.dock{margin-top:10px}.home-viewport{min-height:540px}}
 @media(max-height:700px){.quick-arrow{top:calc(env(safe-area-inset-top) + 5px)}.status-bar{display:none}.home-page{padding-top:4px}.app-grid{grid-template-rows:repeat(6,minmax(0,1fr));gap:5px 5px}.app-icon,.folder-icon{width:clamp(36px,5.8vh,46px);height:clamp(36px,5.8vh,46px);border-radius:14px}.app-icon{font-size:24px}.dock{min-height:68px;padding:8px 13px;margin-top:4px}.dock .app-icon{width:46px;height:46px}.gesture-hint{margin-bottom:5px}.app-grid{gap:3px 5px}.app-tile b{font-size:10px;line-height:12px;flex-basis:12px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+/* iPhone-like full-screen app and switcher */
+.home-hidden{visibility:hidden;pointer-events:none}
+.app-fullscreen{position:fixed;inset:0;z-index:25;background:#fff;animation:app-open .32s cubic-bezier(.18,.75,.25,1) both;overflow:hidden}
+.app-fullscreen iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+@keyframes app-open{from{opacity:.3;transform:scale(.88) translateY(24px);border-radius:32px}to{opacity:1;transform:scale(1) translateY(0);border-radius:0}}
+.app-home-indicator{position:absolute;z-index:4;bottom:calc(env(safe-area-inset-bottom) + 5px);left:50%;transform:translateX(-50%);width:74px;height:25px;border:0;background:transparent;display:grid;place-items:center}
+.app-home-indicator span{display:block;width:38px;height:5px;border-radius:8px;background:#171923;box-shadow:0 0 2px #fff8}
+.app-nav-controls{position:absolute;z-index:6;bottom:calc(env(safe-area-inset-bottom) + 38px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;padding:9px 14px;border-radius:24px;background:#111827df;border:1px solid #ffffff28;box-shadow:0 8px 30px #0004;animation:nav-fade-in .2s ease both}
+.app-nav-controls button{width:42px;height:42px;border-radius:50%;background:#ffffff18;border:1px solid #ffffff2a;color:#fff;font-size:23px;display:grid;place-items:center}
+.app-nav-controls button:active{transform:scale(.88)}
+@keyframes nav-fade-in{from{opacity:0;transform:translate(-50%,8px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+.app-switcher{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#141a2ceF,#070a12f5);backdrop-filter:blur(22px);display:flex;flex-direction:column;justify-content:center;gap:24px;padding:24px 18px;animation:switcher-in .24s cubic-bezier(.18,.75,.25,1) both}
+@keyframes switcher-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.switcher-cards{display:flex;gap:16px;overflow-x:auto;align-items:center;padding:16px 4px 22px;scroll-snap-type:x mandatory}
+.recent-card{position:relative;flex:0 0 min(72vw,285px);height:min(54vh,420px);border-radius:27px;overflow:hidden;background:linear-gradient(145deg,#27324a,#111725);border:1px solid #ffffff35;box-shadow:0 18px 45px #0005;scroll-snap-align:center;display:flex;flex-direction:column;justify-content:space-between;animation:card-pop .26s cubic-bezier(.18,.75,.25,1) both}
+@keyframes card-pop{from{opacity:0;transform:translateY(22px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+.recent-close{position:absolute;right:12px;top:12px;width:30px;height:30px;border:0;border-radius:50%;background:#ffffff25;color:#fff;font-size:21px;z-index:2}
+.recent-preview{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}.recent-preview .app-icon{width:70px;height:70px;font-size:34px;border-radius:20px}.recent-preview b{font-size:15px}
+.recent-open{margin:14px;border:1px solid #ffffff28;background:#ffffff14;color:#fff;border-radius:14px;padding:12px;font-weight:650}
+.switcher-home{align-self:center;border:0;border-radius:20px;background:#ffffffec;color:#151a28;padding:12px 28px;font-weight:750}
+.drag-placeholder{min-width:0;min-height:0;border-radius:17px;background:#ffffff0c;border:1px dashed #ffffff24;animation:slot-expand .2s cubic-bezier(.18,.75,.25,1) both}
+@keyframes slot-expand{from{opacity:.2;transform:scale(.78)}to{opacity:1;transform:scale(1)}}
+.live-drag-tile{position:fixed!important;z-index:80!important;left:0;top:0;transform:translate(-50%,-60%) scale(1.08) rotate(-2deg)!important;opacity:1!important;animation:lift-icon .18s cubic-bezier(.18,.8,.2,1) both;pointer-events:none!important;filter:drop-shadow(0 18px 18px #0007)}
+.live-drag-tile .app-icon{width:54px;height:54px;border-radius:16px}
+.dock{touch-action:none}
+.dock button{position:relative}
+.dock-remove{position:absolute;z-index:4;left:-6px;top:-7px;width:21px;height:21px;display:grid;place-items:center;border-radius:50%;background:#f0f2f8;color:#222a3b;font-size:19px;font-weight:800;box-shadow:0 2px 8px #0006;animation:nav-fade-in .18s ease both}
+.dock-editing button{animation:icon-jiggle .32s ease-in-out infinite alternate}
+.dock-editing button:nth-child(2n){animation-delay:-.1s}
+.dock button.deleting{animation:delete-pop .23s ease forwards}
+@media(prefers-reduced-motion:reduce){.app-fullscreen,.app-switcher,.recent-card,.app-nav-controls,.drag-placeholder,.live-drag-tile{animation:none!important}}
