@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 :root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","DM Sans",sans-serif;color:#fff;background:#0b1020;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;font-weight:400;font-optical-sizing:auto}
 *{box-sizing:border-box}
-html,body,#root{margin:0;min-width:320px;width:100%;height:100%;overflow:hidden}
-html,body{overscroll-behavior:none} body{position:fixed;inset:0;min-height:0;touch-action:none}
+html,body,#root{margin:0;min-width:320px;width:100%;height:100%;max-height:100%;overflow:hidden!important;overscroll-behavior:none;overscroll-behavior-y:none}
+html,body{position:fixed;inset:0;min-height:0;touch-action:none} body{max-height:100dvh}
 button,input{font:inherit}
 button{color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offset:3px}
-.da-shell{position:fixed;inset:0;isolation:isolate;height:100vh;height:100dvh;min-height:0;width:100%;overflow:hidden;overscroll-behavior:none;background-color:#10172b;background-size:cover;background-position:center;background-attachment:fixed;color:#f9faff;display:flex;flex-direction:column;align-items:stretch;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);touch-action:pan-y}
+.da-shell{position:fixed;inset:0;isolation:isolate;height:100vh;height:100dvh;min-height:0;width:100%;overflow:hidden;overscroll-behavior:none;background-color:#10172b;background-size:cover;background-position:center;background-attachment:fixed;color:#f9faff;display:flex;flex-direction:column;align-items:stretch;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);touch-action:none;overscroll-behavior:none}
 .da-shell:before{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 18% 9%,#5368a04a,transparent 35%),radial-gradient(ellipse at 87% 37%,#59478b36,transparent 38%),linear-gradient(160deg,#101a32 0%,#101426 54%,#1a1830 100%)}
 .wallpaper-midnight:before{background:radial-gradient(ellipse at 50% 0,#33436c65,transparent 48%),linear-gradient(155deg,#080d1b,#11182b 60%,#11121f)}
 .wallpaper-sunset:before{background:radial-gradient(ellipse at 80% 0,#d15c7260,transparent 42%),radial-gradient(ellipse at 10% 50%,#794d7a35,transparent 40%),linear-gradient(155deg,#29182d,#17192d 60%,#111725)}
@@ -20,7 +20,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .page-track{display:flex;width:max-content;flex:1;min-height:0;height:100%;will-change:transform}
 .home-page{width:100vw;max-width:100vw;height:100%;min-height:0;flex:0 0 100vw;padding:16px 20px 10px;display:flex;align-items:stretch;justify-content:center}
 .app-grid{width:100%;height:100%;max-width:520px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:8px 7px;align-content:stretch}
-.app-tile{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:7px;padding:0 2px 4px;border:0;background:transparent;border-radius:17px;text-align:center;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.app-tile{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:7px;padding:0 2px 4px;border:0;background:transparent;border-radius:17px;text-align:center;touch-action:none;user-select:none;-webkit-user-select:none}
 .app-tile b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:570;letter-spacing:.05px;color:#fff;text-shadow:0 1px 8px #0008;line-height:15px}
 .app-icon{width:57px;height:57px;display:grid;place-items:center;flex:0 0 auto;border-radius:17px;font-size:29px;font-weight:650;line-height:1;color:white;box-shadow:0 7px 19px #0003,inset 0 1px #ffffff35;position:relative;overflow:hidden}
 .app-icon:before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,#ffffff2a,transparent 56%);pointer-events:none}
