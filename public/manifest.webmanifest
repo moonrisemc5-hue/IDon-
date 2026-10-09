@@ -1,0 +1,10 @@
+{
+  "name": "IDon",
+  "short_name": "IDon",
+  "description": "DaBoys apps hub",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b101b",
+  "theme_color": "#111827",
+  "icons": []
+}
