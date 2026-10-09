@@ -92,9 +92,9 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 
 /* iPhone-like full-screen app and switcher */
 .home-hidden{visibility:hidden;pointer-events:none}
-.app-fullscreen{position:fixed;inset:0;z-index:25;background:#fff;animation:app-open .32s cubic-bezier(.18,.75,.25,1) both;overflow:hidden}
+.app-fullscreen{position:fixed;inset:0;z-index:25;background:#fff;animation:app-open .62s cubic-bezier(.18,.75,.25,1) both;overflow:hidden}
 .app-fullscreen iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
-@keyframes app-open{from{opacity:.3;transform:scale(.88) translateY(24px);border-radius:32px}to{opacity:1;transform:scale(1) translateY(0);border-radius:0}}
+@keyframes app-open{from{opacity:.35;transform:scale(.82) translateY(46px);border-radius:36px}to{opacity:1;transform:scale(1) translateY(0);border-radius:0}}
 .app-gesture-area{position:absolute;z-index:4;left:0;right:0;bottom:0;height:58px;padding-bottom:env(safe-area-inset-bottom);touch-action:pan-y;background:transparent}.app-home-indicator{position:absolute;z-index:4;bottom:calc(env(safe-area-inset-bottom) + 5px);left:50%;transform:translateX(-50%);width:74px;height:25px;border:0;background:transparent;display:grid;place-items:center}
 .app-home-indicator span{display:block;width:38px;height:5px;border-radius:8px;background:#171923;box-shadow:0 0 2px #fff8}
 .app-nav-controls{position:absolute;z-index:6;bottom:calc(env(safe-area-inset-bottom) + 38px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:20px;padding:9px 14px;border-radius:24px;background:#111827df;border:1px solid #ffffff28;box-shadow:0 8px 30px #0004;animation:nav-fade-in .2s ease both,nav-fade-out .22s ease 2.35s forwards}
@@ -102,18 +102,18 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .app-nav-controls button:active{transform:scale(.88)}
 @keyframes nav-fade-in{from{opacity:0;transform:translate(-50%,8px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 @keyframes nav-fade-out{to{opacity:0;transform:translate(-50%,7px) scale(.96)}}
-.internal-veil{padding:0;align-items:stretch}.internal-veil .panel-window{width:100%;height:100%;max-height:100%;border:0;border-radius:0;padding:calc(env(safe-area-inset-top) + 22px) 20px calc(env(safe-area-inset-bottom) + 55px);animation:app-open .3s cubic-bezier(.18,.75,.25,1) both}.internal-gesture-area{position:fixed;z-index:42;left:0;right:0;bottom:0;height:calc(58px + env(safe-area-inset-bottom));background:transparent}.internal-gesture-area .app-home-indicator span{background:#f4f6ff}.internal-nav{z-index:65}
-.app-switcher{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#141a2ceF,#070a12f5);backdrop-filter:blur(22px);display:flex;flex-direction:column;justify-content:center;gap:24px;padding:24px 18px;animation:switcher-in .24s cubic-bezier(.18,.75,.25,1) both}
+.internal-veil{padding:0;align-items:stretch}.internal-veil .panel-window{width:100%;height:100%;max-height:100%;border:0;border-radius:0;padding:calc(env(safe-area-inset-top) + 22px) 20px calc(env(safe-area-inset-bottom) + 55px);animation:app-open .62s cubic-bezier(.18,.75,.25,1) both}.internal-gesture-area{position:fixed;z-index:42;left:0;right:0;bottom:0;height:calc(58px + env(safe-area-inset-bottom));background:transparent}.internal-gesture-area .app-home-indicator span{background:#f4f6ff}.internal-nav{z-index:65}
+.app-switcher{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#141a2ceF,#070a12f5);backdrop-filter:blur(22px);display:flex;flex-direction:column;justify-content:center;gap:24px;padding:24px 18px;animation:switcher-in .42s cubic-bezier(.18,.75,.25,1) both}
 @keyframes switcher-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
 .switcher-cards{display:flex;gap:16px;overflow-x:auto;align-items:center;padding:16px 4px 22px;scroll-snap-type:x mandatory}
-.recent-card{position:relative;flex:0 0 min(72vw,285px);height:min(54vh,420px);border-radius:27px;overflow:hidden;background:linear-gradient(145deg,#27324a,#111725);border:1px solid #ffffff35;box-shadow:0 18px 45px #0005;scroll-snap-align:center;display:flex;flex-direction:column;justify-content:space-between;animation:card-pop .26s cubic-bezier(.18,.75,.25,1) both}
+.recent-card{position:relative;flex:0 0 min(72vw,285px);height:min(54vh,420px);border-radius:27px;overflow:hidden;background:linear-gradient(145deg,#27324a,#111725);border:1px solid #ffffff35;box-shadow:0 18px 45px #0005;scroll-snap-align:center;display:flex;flex-direction:column;justify-content:space-between;animation:card-pop .38s cubic-bezier(.18,.75,.25,1) both}
 @keyframes card-pop{from{opacity:0;transform:translateY(22px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
-.recent-card.closing{animation:card-dismiss .22s cubic-bezier(.4,0,.8,.3) forwards}
-@keyframes card-dismiss{to{opacity:0;transform:translateY(-45px) scale(.78);filter:blur(4px)}}
-.recent-close{position:absolute;right:12px;top:12px;width:30px;height:30px;border:0;border-radius:50%;background:#ffffff25;color:#fff;font-size:21px;z-index:2}
+.recent-card.closing{animation:card-dismiss .42s cubic-bezier(.35,.05,.2,1) forwards;pointer-events:none}
+@keyframes card-dismiss{0%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}65%{opacity:.8;transform:translateY(-55vh) scale(.88);filter:blur(1px)}100%{opacity:0;transform:translateY(-110vh) scale(.72);filter:blur(5px)}}
+.recent-close{display:none}
 .recent-preview{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}.recent-preview .app-icon{width:70px;height:70px;font-size:34px;border-radius:20px}.recent-preview b{font-size:15px}
-.recent-open{margin:14px;border:1px solid #ffffff28;background:#ffffff14;color:#fff;border-radius:14px;padding:12px;font-weight:650}
-.switcher-home{align-self:center;border:0;border-radius:20px;background:#ffffffec;color:#151a28;padding:12px 28px;font-weight:750}
+.recent-open{display:none}
+.switcher-home{display:none}
 .drag-placeholder{min-width:0;min-height:0;border-radius:17px;background:#ffffff0c;border:1px dashed #ffffff24;animation:slot-expand .2s cubic-bezier(.18,.75,.25,1) both}
 @keyframes slot-expand{from{opacity:.2;transform:scale(.78)}to{opacity:1;transform:scale(1)}}
 .live-drag-tile{position:fixed!important;z-index:80!important;left:0;top:0;transform:translate(-50%,-60%) scale(1.08) rotate(-2deg)!important;opacity:1!important;animation:lift-icon .18s cubic-bezier(.18,.8,.2,1) both;pointer-events:none!important;filter:drop-shadow(0 18px 18px #0007)}
