@@ -1,193 +1,197 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import {
-  Scale, Landmark, Music2, Settings as SettingsIcon, Smartphone, Plus,
-  X, ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward,
-  Volume2, Image as ImageIcon, Trash2, Pencil, Folder, Grip, Search,
-} from 'lucide-react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
-type AppInfo = {
-  id: string
-  name: string
-  subtitle: string
-  color: string
-  kind: 'link' | 'panel'
-  url?: string
-  icon: 'economy' | 'court' | 'music' | 'settings' | 'device'
-}
-
-const defaultApps: AppInfo[] = [
-  { id: 'economy', name: 'DaEconomy', subtitle: 'Group economy', color: 'gold', kind: 'link', url: 'https://xt0tiedcmrq9i5amck0jexb0.macaly.app/', icon: 'economy' },
-  { id: 'court', name: 'DaCourt', subtitle: 'Courtroom', color: 'blue', kind: 'link', url: 'https://jquv9w2u2tbwtpi6qdd4ze7n.macaly.app/', icon: 'court' },
-  { id: 'music', name: 'DaMusic', subtitle: 'Music player', color: 'pink', kind: 'panel', icon: 'music' },
-  { id: 'settings', name: 'Settings', subtitle: 'Personalize IDon', color: 'slate', kind: 'panel', icon: 'settings' },
-  { id: 'device', name: 'DeviceTest', subtitle: 'Quick test', color: 'mint', kind: 'panel', icon: 'device' },
+type AppId = 'economy' | 'court' | 'music' | 'settings' | 'device'
+type AppInfo = { id: AppId; name: string; icon: string; tone: string; url?: string }
+type Folder = { id: string; name: string; apps: AppId[] }
+const apps: AppInfo[] = [
+  { id: 'economy', name: 'DaEconomy', icon: '▤', tone: 'gold', url: 'https://xt0tiedcmrq9i5amck0jexb0.macaly.app/' },
+  { id: 'court', name: 'DaCourt', icon: '⚖', tone: 'blue', url: 'https://jquv9w2u2tbwtpi6qdd4ze7n.macaly.app/' },
+  { id: 'music', name: 'DaMusic', icon: '♫', tone: 'pink' },
+  { id: 'settings', name: 'Settings', icon: '⚙', tone: 'grey' },
+  { id: 'device', name: 'DeviceTest', icon: '◉', tone: 'green' },
 ]
-const songs = [
-  { title: 'DaBoys Radio 01', artist: 'DaMusic Radio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
-  { title: 'DaBoys Radio 02', artist: 'DaMusic Radio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
-  { title: 'DaBoys Radio 03', artist: 'DaMusic Radio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
-  { title: 'DaBoys Radio 04', artist: 'DaMusic Radio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' },
-]
-type FolderData = { id: string; name: string; appIds: string[] }
-
-function AppGlyph({ app, small = false }: { app: AppInfo; small?: boolean }) {
-  const size = small ? 18 : 29
-  const icon = app.icon === 'economy' ? <Landmark size={size} strokeWidth={2.3} /> :
-    app.icon === 'court' ? <Scale size={size} strokeWidth={2.3} /> :
-    app.icon === 'music' ? <Music2 size={size} strokeWidth={2.3} /> :
-    app.icon === 'settings' ? <SettingsIcon size={size} strokeWidth={2.3} /> :
-    <Smartphone size={size} strokeWidth={2.3} />
-  return <span className={'app-glyph glyph-' + app.color}>{icon}</span>
-}
+const tracks = Array.from({ length: 8 }, (_, i) => ({ title: 'DaBoys Radio ' + String(i + 1).padStart(2, '0'), url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-' + (i + 1) + '.mp3' }))
+const PAGE_SIZE = 24
+const baseSlots = (): (string | null)[] => [...apps.map(a => a.id), ...Array(PAGE_SIZE - apps.length).fill(null)]
+function read<T>(key: string, fallback: T): T { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) as T : fallback } catch { return fallback } }
 
 export default function App() {
-  const [wallpaper, setWallpaper] = useState(() => localStorage.getItem('idon-wallpaper') || 'aurora')
-  const [customWallpaper, setCustomWallpaper] = useState(() => localStorage.getItem('idon-custom-wallpaper') || '')
-  const [activePanel, setActivePanel] = useState<'settings' | 'music' | 'device' | null>(null)
-  const [editMode, setEditMode] = useState(false)
-  const [apps, setApps] = useState<AppInfo[]>(() => {
-    try {
-      const saved = localStorage.getItem('idon-app-order')
-      if (!saved) return defaultApps
-      const ids = JSON.parse(saved) as string[]
-      return [...ids.map(id => defaultApps.find(a => a.id === id)).filter((a): a is AppInfo => Boolean(a)),
-        ...defaultApps.filter(a => !ids.includes(a.id))]
-    } catch { return defaultApps }
-  })
-  const [folders, setFolders] = useState<FolderData[]>(() => {
-    try { return JSON.parse(localStorage.getItem('idon-folders') || '[]') } catch { return [] }
-  })
-  const [panelPage, setPanelPage] = useState(0)
+  const [slots, setSlots] = useState<(string | null)[]>(() => read('daapps-slots', baseSlots()))
+  const [pages, setPages] = useState(() => Math.max(1, read('daapps-pages', 1)))
+  const [page, setPage] = useState(0)
+  const [folders, setFolders] = useState<Folder[]>(() => read('daapps-folders', []))
+  const [edit, setEdit] = useState(false)
+  const [wallpaper, setWallpaper] = useState(() => localStorage.getItem('daapps-wallpaper') || 'aurora')
+  const [customWallpaper, setCustomWallpaper] = useState(() => localStorage.getItem('daapps-custom') || '')
+  const [panel, setPanel] = useState<'settings' | 'music' | 'device' | null>(null)
+  const [folderOpen, setFolderOpen] = useState<string | null>(null)
+  const [rename, setRename] = useState<string | null>(null)
   const [folderName, setFolderName] = useState('')
-  const [folderDraft, setFolderDraft] = useState('')
-  const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
-  const [volume, setVolume] = useState(60)
+  const [removeId, setRemoveId] = useState<string | null>(null)
+  const [control, setControl] = useState(false)
   const [track, setTrack] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [controlCenter, setControlCenter] = useState(false)
-  const [search, setSearch] = useState('')
-  const [dragged, setDragged] = useState<string | null>(null)
+  const [volume, setVolume] = useState(65)
   const [toast, setToast] = useState('')
-  const [now, setNow] = useState(new Date())
+  const [dragging, setDragging] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const pressTimer = useRef<number | null>(null)
+  const longPress = useRef(false)
+  const startX = useRef<number | null>(null)
+  const swipeDX = useRef(0)
+  const dragSource = useRef<string | null>(null)
+  const dragTarget = useRef<string | null>(null)
+  const folderHoverTimer = useRef<number | null>(null)
+  const hoverTarget = useRef<string | null>(null)
+  const pointer = useRef({ x: 0, y: 0 })
 
-  useEffect(() => { localStorage.setItem('idon-wallpaper', wallpaper) }, [wallpaper])
-  useEffect(() => { localStorage.setItem('idon-custom-wallpaper', customWallpaper) }, [customWallpaper])
-  useEffect(() => { localStorage.setItem('idon-app-order', JSON.stringify(apps.map(a => a.id))) }, [apps])
-  useEffect(() => { localStorage.setItem('idon-folders', JSON.stringify(folders)) }, [folders])
+  useEffect(() => { localStorage.setItem('daapps-slots', JSON.stringify(slots)) }, [slots])
+  useEffect(() => { localStorage.setItem('daapps-pages', JSON.stringify(pages)) }, [pages])
+  useEffect(() => { localStorage.setItem('daapps-folders', JSON.stringify(folders)) }, [folders])
+  useEffect(() => { localStorage.setItem('daapps-wallpaper', wallpaper) }, [wallpaper])
+  useEffect(() => { localStorage.setItem('daapps-custom', customWallpaper) }, [customWallpaper])
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 30000)
-    return () => window.clearInterval(timer)
-  }, [])
-  useEffect(() => {
-    const player = audioRef.current
-    if (!player) return
-    player.volume = volume / 100
-    if (playing && activePanel === 'music') void player.play().catch(() => setPlaying(false))
-    else player.pause()
-  }, [activePanel, playing, track, volume])
+    const a = audioRef.current
+    if (!a) return
+    a.volume = volume / 100
+    if (playing && panel === 'music') void a.play().catch(() => setPlaying(false))
+    else a.pause()
+  }, [playing, panel, track, volume])
+  useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current) }, [])
 
-  const currentSong = songs[track]
-  const visibleApps = useMemo(() => apps.filter(a => (a.name + ' ' + a.subtitle).toLowerCase().includes(search.toLowerCase())), [apps, search])
-  const notify = (message: string) => {
-    setToast(message)
-    window.setTimeout(() => setToast(''), 2200)
+  const notify = (s: string) => { setToast(s); window.setTimeout(() => setToast(''), 2000) }
+  const allSlots = [...slots]
+  while (allSlots.length < pages * PAGE_SIZE) allSlots.push(null)
+  const getApp = (id: string | null) => apps.find(a => a.id === id)
+  const getFolder = (id: string | null) => folders.find(f => f.id === id)
+  const launch = (id: string) => {
+    const a = getApp(id)
+    if (!a || edit) return
+    if (a.url) { window.location.href = a.url; return }
+    setPanel(a.id as 'settings' | 'music' | 'device')
   }
-  const openApp = (app: AppInfo) => {
-    if (editMode) return
-    if (app.kind === 'link' && app.url) { window.open(app.url, '_blank', 'noopener,noreferrer'); return }
-    setActivePanel(app.id === 'music' ? 'music' : app.id === 'device' ? 'device' : 'settings')
+  const clearPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current); pressTimer.current = null }
+  const startAppPress = (id: string, e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    longPress.current = false
+    pointer.current = { x: e.clientX, y: e.clientY }
+    pressTimer.current = window.setTimeout(() => {
+      longPress.current = true
+      setEdit(true)
+      dragSource.current = id
+      dragTarget.current = id
+      setDragging(id)
+    }, 480)
   }
+  const makeFolder = (first: string, second: string) => {
+    if (first === second || first.startsWith('folder-') || second.startsWith('folder-')) return
+    const i = slots.indexOf(first), j = slots.indexOf(second)
+    if (i < 0 || j < 0) return
+    const id = 'folder-' + Date.now()
+    const folderApps = [second, first].filter((x): x is AppId => apps.some(a => a.id === x))
+    if (folderApps.length < 2) return
+    setFolders(prev => [...prev, { id, name: 'Folder', apps: folderApps }])
+    setSlots(prev => { const next = [...prev]; next[i] = null; next[j] = id; return next })
+    notify('Folder created')
+  }
+  const pointerMove = (e: React.PointerEvent) => {
+    if (dragSource.current) {
+      e.preventDefault()
+      pointer.current = { x: e.clientX, y: e.clientY }
+      const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
+      const target = targetEl?.dataset.slot || null
+      dragTarget.current = target
+      if (target && target !== dragSource.current && !target.startsWith('folder-') && !dragSource.current.startsWith('folder-')) {
+        if (hoverTarget.current !== target) {
+          if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
+          hoverTarget.current = target
+          folderHoverTimer.current = window.setTimeout(() => {
+            if (dragSource.current) {
+              makeFolder(dragSource.current, target)
+              dragSource.current = null; dragTarget.current = null; setDragging(null)
+            }
+          }, 700)
+        }
+      } else {
+        if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
+        folderHoverTimer.current = null; hoverTarget.current = null
+      }
+      return
+    }
+    if (startX.current !== null && !edit) {
+      const dx = e.clientX - startX.current
+      swipeDX.current = dx
+      if (Math.abs(dx) > 10) clearPress()
+    }
+  }
+  const pointerUp = () => {
+    clearPress()
+    if (dragSource.current) {
+      const from = dragSource.current, to = dragTarget.current
+      if (to && to !== from && !hoverTarget.current) {
+        setSlots(prev => {
+          const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
+          if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
+          else if (a >= 0 && to.startsWith('empty-')) { next[a] = null; const index = Number(to.slice(6)); if (index >= 0 && index < next.length) next[index] = from }
+          return next
+        })
+      }
+      dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
+      if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
+      setDragging(null)
+    } else if (startX.current !== null && Math.abs(swipeDX.current) > window.innerWidth * .2) {
+      setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
+    }
+    startX.current = null; swipeDX.current = 0
+  }
+  const addPage = () => { setSlots(prev => [...prev, ...Array(PAGE_SIZE).fill(null)]); setPages(p => p + 1); setPage(p => p + 1) }
+  const removePage = () => {
+    if (page <= 0 || pages <= 1) return
+    const start = page * PAGE_SIZE
+    const lost = allSlots.slice(start, start + PAGE_SIZE).filter(Boolean) as string[]
+    setSlots(prev => { const next = [...prev.slice(0, start), ...prev.slice(start + PAGE_SIZE)]; lost.forEach(id => { const i = next.indexOf(null); if (i >= 0) next[i] = id }); return next })
+    setPages(p => p - 1); setPage(p => Math.max(0, p - 1))
+  }
+  const saveRename = () => { if (rename) setFolders(prev => prev.map(f => f.id === rename ? { ...f, name: folderName.trim() || f.name } : f)); setRename(null) }
+  const deleteApp = (id: string) => { setSlots(prev => prev.map(v => v === id ? null : v)); setFolders(prev => prev.map(f => ({ ...f, apps: f.apps.filter(a => a !== id) })).filter(f => f.apps.length)); setRemoveId(null); setEdit(false) }
   const uploadWallpaper = (file?: File) => {
     if (!file || !file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = () => { setCustomWallpaper(String(reader.result || '')); setWallpaper('custom') }
     reader.readAsDataURL(file)
   }
-  const moveApp = (fromId: string, toId: string) => {
-    if (fromId === toId) return
-    setApps(current => {
-      const next = [...current]
-      const from = next.findIndex(a => a.id === fromId)
-      const to = next.findIndex(a => a.id === toId)
-      if (from < 0 || to < 0) return current
-      const [item] = next.splice(from, 1)
-      next.splice(to, 0, item)
-      return next
-    })
-  }
-  const createFolder = () => {
-    const name = folderName.trim() || 'New Folder'
-    if (apps.length < 2) { notify('Add at least two apps first'); return }
-    const id = 'folder-' + Date.now()
-    setFolders(prev => [...prev, { id, name, appIds: [apps[0].id, apps[1].id] }])
-    setFolderName('')
-    setPanelPage(1)
-    notify('Folder created')
-  }
-  const removeApp = (id: string) => {
-    setApps(prev => prev.filter(a => a.id !== id))
-    setFolders(prev => prev.map(f => ({ ...f, appIds: f.appIds.filter(appId => appId !== id) })).filter(f => f.appIds.length > 0))
-    notify('App removed from this home screen')
-  }
-  const wallpaperStyle: CSSProperties | undefined = wallpaper === 'custom' && customWallpaper
-    ? { backgroundImage: 'linear-gradient(#07111a55,#07111a66),url(' + customWallpaper + ')', backgroundSize: 'cover', backgroundPosition: 'center' }
-    : undefined
+  const shellStyle: CSSProperties = customWallpaper && wallpaper === 'custom' ? { backgroundImage: 'linear-gradient(#090d19a0,#090d19a0),url("' + customWallpaper + '")' } : {}
 
-  return <main className={'idon-shell wallpaper-' + wallpaper} style={wallpaperStyle}>
-    <div className="ambient ambient-a" /><div className="ambient ambient-b" />
-    <header className="topbar">
-      <a className="wordmark" href="#" onClick={e => e.preventDefault()}><span className="brand-mark">i</span><span>IDon</span></a>
-      <div className="topbar-center"><span className="status-dot" /> DaBoys workspace</div>
-      <div className="topbar-right"><span className="clock">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><button className="icon-button" aria-label="Control Center" onClick={() => setControlCenter(true)}><Grip size={19} /></button></div>
-    </header>
-
-    <section className="welcome-row">
-      <div><p className="eyebrow">YOUR DIGITAL SPACE</p><h1>Good to see you.</h1><p className="subheading">Your apps, your setup, your rules.</p></div>
-      <div className="welcome-actions"><button className={'soft-button ' + (editMode ? 'selected' : '')} onClick={() => setEditMode(!editMode)}><Pencil size={15} />{editMode ? 'Done editing' : 'Edit home'}</button><button className="primary-button" onClick={() => { setPanelPage(1); document.getElementById('organize')?.scrollIntoView({ behavior: 'smooth' }) }}><Plus size={16} /> Organize</button></div>
-    </section>
-
-    <section className="workspace-grid">
-      <div className="desktop-card home-card">
-        <div className="card-heading"><div><p className="eyebrow">HOME SCREEN</p><h2>My apps <span className="count-pill">{visibleApps.length}</span></h2></div><label className="search-box"><Search size={15} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Find an app" /></label></div>
-        {editMode && <div className="edit-banner"><Grip size={16} /> Edit mode is on. Drag an app onto another to reorder it, or use the remove button.</div>}
-        <div className="apps-grid">
-          {visibleApps.map(app => <div className={'app-tile ' + (dragged === app.id ? 'dragging' : '')} key={app.id} draggable={editMode} onDragStart={() => setDragged(app.id)} onDragOver={e => { if (editMode) e.preventDefault() }} onDrop={e => { e.preventDefault(); if (dragged) moveApp(dragged, app.id); setDragged(null) }} onDragEnd={() => setDragged(null)}>
-            {editMode && <button className="remove-app" title={'Remove ' + app.name} onClick={() => removeApp(app.id)}><X size={13} /></button>}
-            <button className="app-launcher" onClick={() => openApp(app)}><AppGlyph app={app} /><span className="app-name">{app.name}</span><span className="app-subtitle">{app.subtitle}</span></button>
-          </div>)}
-          {!visibleApps.length && <p className="empty-state">No apps match “{search}”.</p>}
-          {folders.map(folder => <button className="folder-tile" key={folder.id} onClick={() => { setFolderDraft(folder.name); setRenamingFolder(folder.id); setPanelPage(1) }}><span className="folder-art"><Folder size={25} /></span><span className="app-name">{folder.name}</span><span className="app-subtitle">{folder.appIds.length} apps</span></button>)}
-        </div>
-        <div className="card-footer"><span><span className="live-dot" /> Saved on this device</span><span>Drag to reorder when editing</span></div>
+  return <main className={'da-shell wallpaper-' + wallpaper + (edit ? ' editing' : '')} style={shellStyle} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
+    <header className="status-bar"><span className="brand-pill"><i /> DaBoys · DaApps</span><div><span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><button aria-label="Control Center" onClick={() => setControl(true)}>⌃</button><button aria-label="Settings" onClick={() => setPanel('settings')}>⚙</button></div></header>
+    <section className="home-viewport" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onPointerMove={pointerMove} onContextMenu={e => e.preventDefault()}>
+      <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeDX.current + 'px))', transition: startX.current !== null && swipeDX.current !== 0 ? 'none' : 'transform .35s ease' }}>
+        {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
+          {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
+            const index = p * PAGE_SIZE + i
+            const a = getApp(id), f = getFolder(id)
+            if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} />
+            if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => { if (edit) startAppPress(id, e); else { startX.current = null; setFolderOpen(id) } }} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
+            if (!a) return null
+            return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
+          })}
+        </div></div>)}
       </div>
-
-      <aside className="side-column">
-        <div className="desktop-card glance-card"><p className="eyebrow">AT A GLANCE</p><div className="big-clock">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div><p className="date-line">{now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p><div className="glance-divider" /><div className="glance-stat"><span>Installed apps</span><strong>{apps.length}</strong></div><div className="glance-stat"><span>Folders</span><strong>{folders.length}</strong></div></div>
-        <div className="desktop-card quick-card"><p className="eyebrow">QUICK ACCESS</p><button onClick={() => setActivePanel('music')}><span className="quick-icon pink"><Music2 size={17} /></span><span><b>DaMusic</b><small>Listen to radio tracks</small></span><ChevronRight size={16} /></button><button onClick={() => setActivePanel('settings')}><span className="quick-icon slate"><SettingsIcon size={17} /></span><span><b>Personalize</b><small>Change your wallpaper</small></span><ChevronRight size={16} /></button><button onClick={() => setControlCenter(true)}><span className="quick-icon blue"><Volume2 size={17} /></span><span><b>Control Center</b><small>Adjust sound and status</small></span><ChevronRight size={16} /></button></div>
-      </aside>
+      {dragging && <div className="drag-ghost" style={{ left: pointer.current.x, top: pointer.current.y }}>{getApp(dragging)?.icon || '▦'}<b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
+      <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
+      {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<button className="done" onClick={() => setEdit(false)}>Done</button></div>}
+      {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
     </section>
-
-    <section className="desktop-card organizer" id="organize">
-      <div className="card-heading"><div><p className="eyebrow">MAKE IT YOURS</p><h2>Organize your space</h2></div><span className="organizer-number">01 / 03</span></div>
-      <div className="organizer-grid">
-        <div className="organizer-item"><span className="organizer-icon purple"><Folder size={20} /></span><div><h3>App folders</h3><p>Group apps together on your home screen.</p><div className="inline-form"><input value={folderName} onChange={e => setFolderName(e.target.value)} placeholder="Folder name" maxLength={24} /><button onClick={createFolder}><Plus size={15} /> Create</button></div></div></div>
-        <div className="organizer-item"><span className="organizer-icon blue"><Grip size={20} /></span><div><h3>Rearrange apps</h3><p>Turn on edit mode, then drag an app onto another position.</p><button className="text-button" onClick={() => setEditMode(!editMode)}>{editMode ? 'Finish editing' : 'Enable edit mode'} <ChevronRight size={14} /></button></div></div>
-        <div className="organizer-item"><span className="organizer-icon orange"><ImageIcon size={20} /></span><div><h3>Personal wallpaper</h3><p>Choose a built-in look or use an image you own.</p><button className="text-button" onClick={() => setActivePanel('settings')}>Open settings <ChevronRight size={14} /></button></div></div>
-      </div>
-    </section>
-
-    <footer className="footer"><span><span className="brand-mark small">i</span> IDon <span className="footer-muted">· DaBoys apps hub</span></span><span>Independent project · v1.0</span></footer>
-
-    {activePanel && <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) setActivePanel(null) }}><section className="modal">
-      <div className="modal-head"><div className="modal-title">{activePanel === 'settings' ? <SettingsIcon size={19} /> : activePanel === 'music' ? <Music2 size={19} /> : <Smartphone size={19} />}<div><h2>{activePanel === 'settings' ? 'Settings' : activePanel === 'music' ? 'DaMusic' : 'Device Test'}</h2><p>{activePanel === 'settings' ? 'Personalize your IDon space' : activePanel === 'music' ? 'A small radio player for your workspace' : 'Your interface is ready'}</p></div></div><button className="icon-button" onClick={() => setActivePanel(null)} aria-label="Close"><X size={19} /></button></div>
-      {activePanel === 'settings' && <div className="modal-body"><h3>Wallpaper</h3><p className="modal-copy">Choose a background. Your choice is saved in this browser.</p><div className="wallpaper-options">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-choice choice-' + w + (wallpaper === w ? ' active' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}><span />{w[0].toUpperCase() + w.slice(1)}</button>)}<label className={'wallpaper-choice upload-choice ' + (wallpaper === 'custom' ? 'active' : '')}><input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /><span><ImageIcon size={18} /></span>My image</label></div>{customWallpaper && <button className="danger-text" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}><Trash2 size={14} /> Remove custom image</button>}<div className="settings-note"><Smartphone size={18} /><div><b>Local preferences</b><p>Wallpaper, app order and folders are stored in this browser on this device.</p></div></div></div>}
-      {activePanel === 'music' && <div className="modal-body music-player"><div className="album-art"><Music2 size={44} /></div><p className="eyebrow">NOW PLAYING</p><h3>{currentSong.title}</h3><p className="modal-copy">{currentSong.artist}</p><audio key={currentSong.url} ref={audioRef} src={currentSong.url} onEnded={() => setTrack(v => (v + 1) % songs.length)} /><div className="player-buttons"><button aria-label="Previous track" onClick={() => setTrack(v => (v - 1 + songs.length) % songs.length)}><SkipBack size={19} /></button><button className="play-button" aria-label={playing ? 'Pause' : 'Play'} onClick={() => setPlaying(v => !v)}>{playing ? <Pause size={21} /> : <Play size={21} />}</button><button aria-label="Next track" onClick={() => setTrack(v => (v + 1) % songs.length)}><SkipForward size={19} /></button></div><label className="volume-control"><Volume2 size={17} /><input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /><span>{volume}%</span></label><div className="song-list">{songs.map((song, i) => <button key={song.url} className={i === track ? 'current' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span className="song-index">{String(i + 1).padStart(2, '0')}</span><span><b>{song.title}</b><small>{song.artist}</small></span><Play size={14} /></button>)}</div><p className="fine-print">Demo audio streams are used here. Add your own licensed tracks when ready.</p></div>}
-      {activePanel === 'device' && <div className="modal-body"><div className="device-check"><span><Smartphone size={26} /></span><h3>Device interface</h3><p>This independent IDon build is running in your browser.</p><div className="check-row"><span>Screen size</span><b>{window.innerWidth} × {window.innerHeight}</b></div><div className="check-row"><span>Browser storage</span><b>Available</b></div><button className="primary-button wide" onClick={() => notify('Everything looks good')}>Run quick check</button></div></div>}
+    <nav className="dock">{apps.filter(a => ['economy','court','music','settings'].includes(a.id)).map(a => <button key={a.id} onClick={() => launch(a.id)}><span className={'app-icon ' + a.tone}>{a.icon}</span></button>)}</nav>
+    {folderOpen && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setFolderOpen(null) }}><section className="folder-window"><header><b>{getFolder(folderOpen)?.name || 'Folder'}</b><div><button onClick={() => { setFolderName(getFolder(folderOpen)?.name || 'Folder'); setRename(folderOpen); setFolderOpen(null) }}>Rename</button><button onClick={() => setFolderOpen(null)}>×</button></div></header><div className="folder-apps">{(getFolder(folderOpen)?.apps || []).map(id => { const a = getApp(id); return a ? <button key={id} onClick={() => { setFolderOpen(null); launch(id) }}><span className={'app-icon ' + a.tone}>{a.icon}</span><b>{a.name}</b></button> : null })}</div></section></div>}
+    {panel && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setPanel(null) }}><section className="panel-window"><header><div><b>{panel === 'music' ? 'DaMusic' : panel === 'settings' ? 'Settings' : 'DeviceTest'}</b><small>{panel === 'music' ? 'DaBoys Radio' : 'DaApps preferences'}</small></div><button onClick={() => setPanel(null)}>×</button></header>
+      {panel === 'settings' && <div className="panel-content"><h3>Wallpaper</h3><p>Choose a look or use your own image. Your settings are saved on this device.</p><div className="wallpaper-list">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-swatch ' + w + (wallpaper === w ? ' selected' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}>{w}</button>)}<label className="wallpaper-swatch upload">＋ My image<input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /></label></div>{customWallpaper && <button className="remove-wall" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}>Remove custom image</button>}<p className="setting-note">{apps.length} apps · layout, folders and wallpaper saved locally</p></div>}
+      {panel === 'music' && <div className="panel-content music-content"><div className="record">♫</div><h2>{tracks[track].title}</h2><p>DaBoys Radio</p><audio ref={audioRef} src={tracks[track].url} onEnded={() => setTrack(t => (t + 1) % tracks.length)} /><div className="player-controls"><button onClick={() => setTrack(t => (t - 1 + tracks.length) % tracks.length)}>⏮</button><button className="play" onClick={() => setPlaying(v => !v)}>{playing ? 'Ⅱ' : '▶'}</button><button onClick={() => setTrack(t => (t + 1) % tracks.length)}>⏭</button></div><label className="volume">🔊 <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /> {volume}%</label><div className="track-list">{tracks.map((t,i) => <button key={t.url} className={track === i ? 'selected' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span>{String(i+1).padStart(2,'0')}</span><b>{t.title}</b><small>{track === i && playing ? 'Playing' : 'Play'}</small></button>)}</div></div>}
+      {panel === 'device' && <div className="panel-content"><h3>Device Test</h3><p>Screen: {window.innerWidth} × {window.innerHeight}</p><p>Local storage: available</p><button className="done wide" onClick={() => notify('Device test passed')}>Run test</button></div>}
     </section></div>}
-
-    {controlCenter && <div className="overlay" onMouseDown={e => { if (e.target === e.currentTarget) setControlCenter(false) }}><section className="control-modal"><div className="modal-head"><div className="modal-title"><Grip size={19} /><div><h2>Control Center</h2><p>{now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p></div></div><button className="icon-button" onClick={() => setControlCenter(false)} aria-label="Close"><X size={19} /></button></div><div className="volume-card"><div className="volume-title"><Volume2 size={20} /><b>Sound</b><strong>{volume}%</strong></div><input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /></div><div className="control-info"><span className="status-dot" /> IDon is running <span className="control-time">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div></section></div>}
-    {renamingFolder && <div className="overlay"><section className="small-modal"><div className="modal-head"><div className="modal-title"><Folder size={19} /><div><h2>Rename folder</h2><p>Choose a label for this folder.</p></div></div><button className="icon-button" onClick={() => setRenamingFolder(null)}><X size={19} /></button></div><div className="modal-body"><input className="full-input" value={folderDraft} onChange={e => setFolderDraft(e.target.value)} maxLength={24} autoFocus /><div className="modal-actions"><button className="soft-button" onClick={() => setRenamingFolder(null)}>Cancel</button><button className="primary-button" onClick={() => { setFolders(prev => prev.map(f => f.id === renamingFolder ? { ...f, name: folderDraft.trim() || f.name } : f)); setRenamingFolder(null) }}>Save name</button></div></div></section></div>}
+    {control && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setControl(false) }}><section className="control-window"><header><b>Control Center</b><button onClick={() => setControl(false)}>×</button></header><p>{new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p><label>🔊 Sound · {volume}%<input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /></label><p className="setting-note">DaApps is running</p></section></div>}
+    {rename && <div className="veil"><section className="confirm-window"><h3>Rename folder</h3><input value={folderName} onChange={e => setFolderName(e.target.value)} autoFocus maxLength={24} onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setRename(null) }} /><footer><button onClick={() => setRename(null)}>Cancel</button><button className="done" onClick={saveRename}>Save</button></footer></section></div>}
+    {removeId && <div className="veil"><section className="confirm-window"><h3>Remove {getApp(removeId)?.name}?</h3><p>It will be removed from this home screen.</p><footer><button onClick={() => setRemoveId(null)}>Cancel</button><button className="remove-confirm" onClick={() => deleteApp(removeId)}>Remove</button></footer></section></div>}
     {toast && <div className="toast">{toast}</div>}
   </main>
 }
