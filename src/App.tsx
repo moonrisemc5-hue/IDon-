@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 
 type AppId = 'economy' | 'court' | 'music' | 'settings' | 'device'
 type AppInfo = { id: AppId; name: string; icon: string; tone: string; url?: string }
@@ -46,6 +46,36 @@ export default function App() {
   const gestureStart = useRef<{x:number;y:number}|null>(null)
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
   const [swipeOffset, setSwipeOffset] = useState(0)
+  const layoutPositions = useRef(new Map<string, DOMRect>())
+  const layoutFrame = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('.app-grid [data-slot]'))
+    const next = new Map<string, DOMRect>()
+    nodes.forEach(el => { if (el.dataset.slot) next.set(el.dataset.slot, el.getBoundingClientRect()) })
+    if (layoutPositions.current.size) {
+      nodes.forEach(el => {
+        const key = el.dataset.slot
+        const before = key ? layoutPositions.current.get(key) : undefined
+        const after = el.getBoundingClientRect()
+        if (!before || (Math.abs(before.left-after.left)<1 && Math.abs(before.top-after.top)<1)) return
+        el.style.transition = 'none'
+        el.style.transform = 'translate(' + (before.left-after.left) + 'px,' + (before.top-after.top) + 'px)'
+        el.style.zIndex = '2'
+      })
+      if (layoutFrame.current !== null) cancelAnimationFrame(layoutFrame.current)
+      layoutFrame.current = requestAnimationFrame(() => {
+        nodes.forEach(el => {
+          el.style.transition = 'transform .46s cubic-bezier(.22,.8,.25,1)'
+          el.style.transform = ''
+          el.style.zIndex = ''
+        })
+        layoutFrame.current = null
+      })
+    }
+    layoutPositions.current = next
+    return () => { if (layoutFrame.current !== null) cancelAnimationFrame(layoutFrame.current) }
+  }, [slots, folders])
+
   const suppressSwitcherClick = useRef(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const pressTimer = useRef<number | null>(null)
@@ -224,17 +254,11 @@ export default function App() {
               }
             }
             folderHoverTimer.current = null
-          }, 320)
+          }, 260)
         }
         if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 5) {
           hoverMoved.current = true
-          if (folderHoverTimer.current && dragSource.current && hoverTarget.current === target && !folderReadyTarget.current) {
-            clearTimeout(folderHoverTimer.current)
-            folderHoverTimer.current = null
-            const from = dragSource.current
-            setSlots(prev => { const next=[...prev], a=next.indexOf(from), b=next.indexOf(target); if(a>=0&&b>=0&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)} return next })
-            lastDragTarget.current = target
-          }
+
         }
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
@@ -280,7 +304,7 @@ export default function App() {
   }
   const touchEnd = (e: React.TouchEvent<HTMLElement>) => {
     const dx = e.changedTouches[0].clientX - touchOrigin.current.x
-    if (startX.current !== null && Math.abs(dx) > 45) {
+    if (startX.current !== null && Math.abs(dx) > 30) {
       const delta = dx < 0 ? 1 : -1
       setPage(p => Math.max(0, Math.min(pages - 1, p + delta)))
     }
