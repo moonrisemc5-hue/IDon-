@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   Scale, Landmark, Music2, Settings as SettingsIcon, Smartphone, Plus,
   X, ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward,
@@ -130,7 +130,7 @@ export default function App() {
     setFolders(prev => prev.map(f => ({ ...f, appIds: f.appIds.filter(appId => appId !== id) })).filter(f => f.appIds.length > 0))
     notify('App removed from this home screen')
   }
-  const wallpaperStyle = wallpaper === 'custom' && customWallpaper
+  const wallpaperStyle: CSSProperties | undefined = wallpaper === 'custom' && customWallpaper
     ? { backgroundImage: 'linear-gradient(#07111a55,#07111a66),url(' + customWallpaper + ')', backgroundSize: 'cover', backgroundPosition: 'center' }
     : undefined
 
