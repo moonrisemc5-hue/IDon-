@@ -175,8 +175,8 @@ export default function App() {
   }
   const shellStyle: CSSProperties = customWallpaper && wallpaper === 'custom' ? { backgroundImage: 'linear-gradient(#090d19a0,#090d19a0),url("' + customWallpaper + '")' } : {}
 
-  return <main className={'da-shell wallpaper-' + wallpaper + (edit ? ' editing' : '')} style={shellStyle} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
-    <section className="home-viewport" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onPointerMove={pointerMove} onContextMenu={e => e.preventDefault()}>
+  return <main className={'da-shell wallpaper-' + wallpaper + (edit ? ' editing' : '')} style={shellStyle} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
+    <section className="home-viewport" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeDX.current + 'px))', transition: startX.current !== null && swipeDX.current !== 0 ? 'none' : 'transform .35s ease' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
           {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
