@@ -199,31 +199,34 @@ export default function App() {
         dragTarget.current = null
         return
       }
-      if (target && target !== dragSource.current && apps.some(a => a.id === target) && apps.some(a => a.id === dragSource.current)) {
+      if (target && target !== dragSource.current && !target.startsWith('empty-')) {
         if (hoverTarget.current !== target) {
           if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
           hoverTarget.current = target
           hoverStart.current = { x: e.clientX, y: e.clientY }
           hoverMoved.current = false
+          folderReadyTarget.current = null
           folderHoverTimer.current = window.setTimeout(() => {
-            if (dragSource.current && hoverTarget.current === target && apps.some(a => a.id === dragSource.current)) {
-              if (hoverMoved.current) {
-                const from = dragSource.current
+            const from = dragSource.current
+            if (from && hoverTarget.current === target) {
+              const isAppPair = apps.some(a => a.id === from) && apps.some(a => a.id === target)
+              const movedWhileHovering = hoverMoved.current
+              if (isAppPair && !movedWhileHovering) {
+                folderReadyTarget.current = target
+              } else {
                 setSlots(prev => {
                   const next = [...prev], a = next.indexOf(from), b = next.indexOf(target)
-                  if (a >= 0 && b >= 0 && a !== b) [next[a], next[b]] = [next[b], next[a]]
+                  if (a >= 0 && b >= 0 && a !== b) { const [item] = next.splice(a, 1); next.splice(b, 0, item) }
                   return next
                 })
                 lastDragTarget.current = target
                 folderReadyTarget.current = null
-              } else {
-                folderReadyTarget.current = target
               }
             }
             folderHoverTimer.current = null
-          }, 360)
+          }, 320)
         }
-        if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 18) hoverMoved.current = true
+        if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 30) hoverMoved.current = true
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
         folderHoverTimer.current = null; hoverTarget.current = null; folderReadyTarget.current = null; lastDragTarget.current = null
@@ -250,6 +253,27 @@ export default function App() {
       setSwipeOffset(dx)
       if (Math.abs(dx) > 10) clearPress()
     }
+  }
+  const touchStart = (e: React.TouchEvent<HTMLElement>) => {
+    if (dragging || edit) return
+    startX.current = e.touches[0].clientX
+    swipeDX.current = 0
+    setSwipeOffset(0)
+  }
+  const touchMove = (e: React.TouchEvent<HTMLElement>) => {
+    if (startX.current === null || dragging) return
+    const dx = e.touches[0].clientX - startX.current
+    swipeDX.current = dx
+    setSwipeOffset(dx)
+    if (Math.abs(dx) > 8) clearPress()
+  }
+  const touchEnd = () => {
+    if (startX.current !== null && Math.abs(swipeDX.current) > Math.min(70, window.innerWidth * .12)) {
+      setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
+    }
+    startX.current = null
+    swipeDX.current = 0
+    setSwipeOffset(0)
   }
   const pointerUp = () => {
     clearPress()
@@ -286,7 +310,7 @@ export default function App() {
       } else if (to && to !== from && !to.startsWith('empty-') && lastDragTarget.current !== to) {
         setSlots(prev => {
           const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
-          if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
+          if (a >= 0 && b >= 0) { const [item] = next.splice(a, 1); next.splice(b, 0, item) }
           return next
         })
       }
@@ -323,13 +347,13 @@ export default function App() {
     <button className="quick-arrow" aria-label="Control Center" onPointerDown={e => e.stopPropagation()} onClick={() => setControl(true)}>⌃</button>
     {currentApp && <section className="app-fullscreen" key={currentApp}>
       <iframe title={getApp(currentApp)?.name || 'App'} src={getApp(currentApp)?.url} />
-      <div className="app-gesture-area" onPointerDown={e => { gestureStart.current={x:e.clientX,y:e.clientY} }} onPointerUp={e => { if(gestureStart.current && gestureStart.current.y-e.clientY>24) showNav(); gestureStart.current=null }}>
+      <div className="app-gesture-area" onPointerDown={e => { gestureStart.current={x:e.clientX,y:e.clientY}; try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} }} onPointerUp={e => { if(gestureStart.current && gestureStart.current.y-e.clientY>24) showNav(); gestureStart.current=null }} onTouchStart={e => { gestureStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY} }} onTouchEnd={e => { if(gestureStart.current && gestureStart.current.y-e.changedTouches[0].clientY>24) showNav(); gestureStart.current=null }}>
         <button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button>
       </div>
       {navVisible && <div className="app-nav-controls"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button></div>}
     </section>}
     {appSwitcher && <div className="app-switcher" onClick={e => {if(e.target===e.currentTarget)goHome()}}><div className="switcher-cards">{recentApps.map(id=>{const a=getApp(id);return a?<div role="button" tabIndex={0} className={'recent-card' + (closingRecent===id?' closing':'')} key={id} onPointerDown={e=>{(e.currentTarget as HTMLElement).dataset.startY=String(e.clientY);suppressSwitcherClick.current=false}} onPointerUp={e=>{const y=Number((e.currentTarget as HTMLElement).dataset.startY||0);if(y-e.clientY>65){suppressSwitcherClick.current=true;closeRecent(id)}}} onClick={()=>{if(suppressSwitcherClick.current){suppressSwitcherClick.current=false;return}setAppSwitcher(false);launch(id)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setAppSwitcher(false);launch(id)}}}><div className="recent-preview"><span className={'app-icon '+a.tone}>{a.icon}</span><b>{a.name}</b><small>Tap to open</small></div></div>:null})}</div></div>}
-    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (!dragging) { startX.current = e.clientX; swipeDX.current = 0; setSwipeOffset(0); try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} } }} onContextMenu={e => e.preventDefault()}>
+    <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (e.pointerType !== 'touch' && !dragging) { startX.current = e.clientX; swipeDX.current = 0; setSwipeOffset(0); try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} } }} onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeOffset + 'px))', transition: startX.current !== null && swipeOffset !== 0 ? 'none' : 'transform .5s cubic-bezier(.22,.8,.25,1)' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
           {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
@@ -354,7 +378,7 @@ export default function App() {
       {panel === 'settings' && <div className="panel-content"><h3>Wallpaper</h3><p>Choose a look or use your own image. Your settings are saved on this device.</p><div className="wallpaper-list">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-swatch ' + w + (wallpaper === w ? ' selected' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}>{w}</button>)}<label className="wallpaper-swatch upload">＋ My image<input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /></label></div>{customWallpaper && <button className="remove-wall" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}>Remove custom image</button>}<p className="setting-note">{apps.length} apps · layout, folders and wallpaper saved locally</p></div>}
       {panel === 'music' && <div className="panel-content music-content"><div className="record">♫</div><h2>{tracks[track].title}</h2><p>DaBoys Radio</p><audio ref={audioRef} src={tracks[track].url} onEnded={() => setTrack(t => (t + 1) % tracks.length)} /><div className="player-controls"><button onClick={() => setTrack(t => (t - 1 + tracks.length) % tracks.length)}>⏮</button><button className="play" onClick={() => setPlaying(v => !v)}>{playing ? 'Ⅱ' : '▶'}</button><button onClick={() => setTrack(t => (t + 1) % tracks.length)}>⏭</button></div><label className="volume">🔊 <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /> {volume}%</label><div className="track-list">{tracks.map((t,i) => <button key={t.url} className={track === i ? 'selected' : ''} onClick={() => { setTrack(i); setPlaying(true) }}><span>{String(i+1).padStart(2,'0')}</span><b>{t.title}</b><small>{track === i && playing ? 'Playing' : 'Play'}</small></button>)}</div></div>}
       {panel === 'device' && <div className="panel-content"><h3>Device Test</h3><p>Screen: {window.innerWidth} × {window.innerHeight}</p><p>Local storage: available</p><button className="done wide" onClick={() => notify('Device test passed')}>Run test</button></div>}
-    </section><div className="internal-gesture-area" onPointerDown={e => {gestureStart.current={x:e.clientX,y:e.clientY}}} onPointerUp={e => {if(gestureStart.current && gestureStart.current.y-e.clientY>24) showNav();gestureStart.current=null}}><button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button></div>{navVisible && <div className="app-nav-controls internal-nav"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button><button aria-label="Home" onClick={goHome}>○</button></div>}</div>}
+    </section><div className="internal-gesture-area" onPointerDown={e => {gestureStart.current={x:e.clientX,y:e.clientY};try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}}} onPointerUp={e => {if(gestureStart.current && gestureStart.current.y-e.clientY>24) showNav();gestureStart.current=null}} onTouchStart={e => {gestureStart.current={x:e.touches[0].clientX,y:e.touches[0].clientY}}} onTouchEnd={e => {if(gestureStart.current && gestureStart.current.y-e.changedTouches[0].clientY>24) showNav();gestureStart.current=null}}><button className="app-home-indicator" aria-label="Show navigation" onClick={showNav}><span /></button></div>{navVisible && <div className="app-nav-controls internal-nav"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button><button aria-label="Home" onClick={goHome}>○</button></div>}</div>}
     {control && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setControl(false) }}><section className="control-window"><header><b>Control Center</b><button onClick={() => setControl(false)}>×</button></header><p>{new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</p><label>🔊 Sound · {volume}%<input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} /></label><p className="setting-note">DaApps is running</p></section></div>}
     {rename && <div className="veil"><section className="confirm-window"><h3>Rename folder</h3><input value={folderName} onChange={e => setFolderName(e.target.value)} autoFocus maxLength={24} onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setRename(null) }} /><footer><button onClick={() => setRename(null)}>Cancel</button><button className="done" onClick={saveRename}>Save</button></footer></section></div>}
     {removeId && <div className="veil"><section className="confirm-window"><h3>Remove {getApp(removeId)?.name}?</h3><p>It will be removed from this home screen.</p><footer><button onClick={() => setRemoveId(null)}>Cancel</button><button className="remove-confirm" onClick={() => deleteApp(removeId)}>Remove</button></footer></section></div>}
