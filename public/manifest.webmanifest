@@ -3,7 +3,7 @@
   "name": "IDon",
   "short_name": "IDon",
   "description": "DaBoys apps hub",
-  "start_url": "https://moonrisemc5-hue.github.io/IDon/",
+  "start_url": "https://moonrisemc5-hue.github.io/IDon-/",
   "scope": "https://moonrisemc5-hue.github.io/IDon-/",
   "display": "standalone",
   "orientation": "portrait",
