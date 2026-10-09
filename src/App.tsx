@@ -226,7 +226,16 @@ export default function App() {
             folderHoverTimer.current = null
           }, 320)
         }
-        if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 30) hoverMoved.current = true
+        if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 5) {
+          hoverMoved.current = true
+          if (folderHoverTimer.current && dragSource.current && hoverTarget.current === target && !folderReadyTarget.current) {
+            clearTimeout(folderHoverTimer.current)
+            folderHoverTimer.current = null
+            const from = dragSource.current
+            setSlots(prev => { const next=[...prev], a=next.indexOf(from), b=next.indexOf(target); if(a>=0&&b>=0&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)} return next })
+            lastDragTarget.current = target
+          }
+        }
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
         folderHoverTimer.current = null; hoverTarget.current = null; folderReadyTarget.current = null; lastDragTarget.current = null
@@ -360,6 +369,7 @@ export default function App() {
             const index = p * PAGE_SIZE + i
             const a = getApp(id), f = getFolder(id)
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
+            if (f && dragging === id) return <div key={id} className="drag-placeholder" data-slot={'empty-' + index} />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
             if (dragging === id) return <div key={id} className="drag-placeholder" data-slot={'empty-' + index} />
@@ -367,7 +377,7 @@ export default function App() {
           })}
         </div></div>)}
       </div>
-      {dragging && <button className="app-tile live-drag-tile" style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging) ? <><span className={'app-icon '+getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.tone}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.icon}</span><b>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.name}</b></> : null}</button>}
+      {dragging && <button className="app-tile live-drag-tile" style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging) ? <><span className={'app-icon '+getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.tone}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.icon}</span><b>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.name}</b></> : getFolder(dragging) ? <><span className="folder-icon">{getFolder(dragging)!.apps.slice(0,4).map(appId=>{const fa=getApp(appId);return fa?<i key={appId} className={'folder-mini '+fa.tone}>{fa.icon}</i>:null})}</span><b>{getFolder(dragging)!.name}</b></> : null}</button>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
