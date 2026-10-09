@@ -151,3 +151,6 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 
 /* Keep the larger swipe-up hit area responsive on iPhone */
 .app-gesture-area,.internal-gesture-area{touch-action:none;-webkit-user-select:none;user-select:none}
+
+/* The temporary navigation menu must sit above the swipe hit-area. */
+.app-fullscreen .app-nav-controls{z-index:70}
