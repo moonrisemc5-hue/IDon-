@@ -45,6 +45,10 @@ export default function App() {
   const folderHoverTimer = useRef<number | null>(null)
   const hoverTarget = useRef<string | null>(null)
   const pointer = useRef({ x: 0, y: 0 })
+  const hoverStart = useRef({ x: 0, y: 0 })
+  const hoverMoved = useRef(false)
+  const pageFlipTimer = useRef<number | null>(null)
+  const lastDragTarget = useRef<string | null>(null)
 
   useEffect(() => { localStorage.setItem('daapps-slots', JSON.stringify(slots)) }, [slots])
   useEffect(() => { localStorage.setItem('daapps-pages', JSON.stringify(pages)) }, [pages])
@@ -114,20 +118,49 @@ export default function App() {
       const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
       const target = targetEl?.dataset.slot || null
       dragTarget.current = target
+      if (e.clientX < 28 && page > 0 && !pageFlipTimer.current) {
+        setPage(p => Math.max(0, p - 1))
+        pageFlipTimer.current = window.setTimeout(() => { pageFlipTimer.current = null }, 650)
+      } else if (e.clientX > window.innerWidth - 28 && page < pages - 1 && !pageFlipTimer.current) {
+        setPage(p => Math.min(pages - 1, p + 1))
+        pageFlipTimer.current = window.setTimeout(() => { pageFlipTimer.current = null }, 650)
+      }
       if (target && target !== dragSource.current && apps.some(a => a.id === target) && apps.some(a => a.id === dragSource.current)) {
         if (hoverTarget.current !== target) {
           if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
           hoverTarget.current = target
+          hoverStart.current = { x: e.clientX, y: e.clientY }
+          hoverMoved.current = false
           folderHoverTimer.current = window.setTimeout(() => {
-            if (dragSource.current) {
+            if (dragSource.current && hoverTarget.current === target && !hoverMoved.current) {
               makeFolder(dragSource.current, target)
               dragSource.current = null; dragTarget.current = null; setDragging(null)
+            } else if (dragSource.current && hoverTarget.current === target) {
+              setSlots(prev => {
+                const next = [...prev], a = next.indexOf(dragSource.current!), b = next.indexOf(target)
+                if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
+                return next
+              })
+              dragTarget.current = null
             }
-          }, 700)
+            folderHoverTimer.current = null
+          }, 650)
         }
+        if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 18) hoverMoved.current = true
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
-        folderHoverTimer.current = null; hoverTarget.current = null
+        folderHoverTimer.current = null; hoverTarget.current = null; lastDragTarget.current = null
+        if (target && target !== dragSource.current) {
+          const from = dragSource.current
+          if (from && target.startsWith('empty-')) {
+            setSlots(prev => {
+              const next = [...prev], a = next.indexOf(from), b = Number(target.slice(6))
+              if (a >= 0 && b >= 0 && b < next.length) { next[b] = from; next[a] = null }
+              return next
+            })
+            dragTarget.current = null
+          }
+        }
       }
       return
     }
@@ -141,16 +174,17 @@ export default function App() {
     clearPress()
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
-      if (to && to !== from) {
+      if (to && to !== from && !to.startsWith('empty-')) {
         setSlots(prev => {
           const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
           if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
-          else if (a >= 0 && to.startsWith('empty-')) { next[a] = null; const index = Number(to.slice(6)); if (index >= 0 && index < next.length) next[index] = from }
           return next
         })
       }
       dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
       if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
+      if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
+      pageFlipTimer.current = null
       setDragging(null)
     } else if (startX.current !== null && Math.abs(swipeDX.current) > window.innerWidth * .2) {
       setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
@@ -176,6 +210,7 @@ export default function App() {
   const shellStyle: CSSProperties = customWallpaper && wallpaper === 'custom' ? { backgroundImage: 'linear-gradient(#090d19a0,#090d19a0),url("' + customWallpaper + '")' } : {}
 
   return <main className={'da-shell wallpaper-' + wallpaper + (edit ? ' editing' : '')} style={shellStyle} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
+    <button className="quick-arrow" aria-label="Control Center" onPointerDown={e => e.stopPropagation()} onClick={() => setControl(true)}>⌃</button>
     <section className="home-viewport" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeDX.current + 'px))', transition: startX.current !== null && swipeDX.current !== 0 ? 'none' : 'transform .35s ease' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
@@ -189,7 +224,7 @@ export default function App() {
           })}
         </div></div>)}
       </div>
-      {dragging && <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }}>{getApp(dragging)?.icon || '▦'}<b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
+      {dragging && <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }}><span className={'app-icon ' + (getApp(dragging)?.tone || 'grey')}>{getApp(dragging)?.icon || '▦'}</span><b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
