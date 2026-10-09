@@ -54,6 +54,8 @@ export default function App() {
   const swipeDX = useRef(0)
   const dragSource = useRef<string | null>(null)
   const folderSource = useRef<string | null>(null)
+  const folderDragOrigin = useRef({x:0,y:0})
+  const folderDragMoved = useRef(false)
   const dragTarget = useRef<string | null>(null)
   const folderHoverTimer = useRef<number | null>(null)
   const hoverTarget = useRef<string | null>(null)
@@ -115,6 +117,8 @@ export default function App() {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPress.current = false
     pointer.current = { x: e.clientX, y: e.clientY }
+    folderDragOrigin.current = {x:e.clientX,y:e.clientY}
+    folderDragMoved.current = false
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
     clearPress()
     pressTimer.current = window.setTimeout(() => {
@@ -175,6 +179,7 @@ export default function App() {
         return
       }
       e.preventDefault()
+      if (folderSource.current && Math.hypot(e.clientX-folderDragOrigin.current.x,e.clientY-folderDragOrigin.current.y)>20) folderDragMoved.current = true
       pointer.current = { x: e.clientX, y: e.clientY }
       setDragPosition({ x: e.clientX, y: e.clientY })
       const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
@@ -238,6 +243,12 @@ export default function App() {
   const pointerUp = () => {
     clearPress()
     if (folderSource.current && dragSource.current) {
+      if (!folderDragMoved.current) {
+        folderSource.current = null; dragSource.current = null; dragTarget.current = null
+        setDragging(null); setEdit(false); setSwipeOffset(0)
+        if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
+        return
+      }
       const from = dragSource.current
       const folderId = folderSource.current
       const target = dragTarget.current
