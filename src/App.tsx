@@ -34,6 +34,7 @@ export default function App() {
   const [volume, setVolume] = useState(65)
   const [toast, setToast] = useState('')
   const [dragging, setDragging] = useState<string | null>(null)
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
   const audioRef = useRef<HTMLAudioElement>(null)
   const pressTimer = useRef<number | null>(null)
   const longPress = useRef(false)
@@ -78,9 +79,20 @@ export default function App() {
     pressTimer.current = window.setTimeout(() => {
       longPress.current = true
       setEdit(true)
+      setDragPosition({ x: pointer.current.x, y: pointer.current.y })
       dragSource.current = id
       dragTarget.current = id
       setDragging(id)
+    }, 480)
+  }
+  const startEmptyPress = (e: ReactPointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    longPress.current = false
+    clearPress()
+    pressTimer.current = window.setTimeout(() => {
+      longPress.current = true
+      startX.current = null
+      setEdit(true)
     }, 480)
   }
   const makeFolder = (first: string, second: string) => {
@@ -98,6 +110,7 @@ export default function App() {
     if (dragSource.current) {
       e.preventDefault()
       pointer.current = { x: e.clientX, y: e.clientY }
+      setDragPosition({ x: e.clientX, y: e.clientY })
       const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
       const target = targetEl?.dataset.slot || null
       dragTarget.current = target
@@ -128,7 +141,7 @@ export default function App() {
     clearPress()
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
-      if (to && to !== from && !hoverTarget.current) {
+      if (to && to !== from) {
         setSlots(prev => {
           const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
           if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
@@ -163,23 +176,22 @@ export default function App() {
   const shellStyle: CSSProperties = customWallpaper && wallpaper === 'custom' ? { backgroundImage: 'linear-gradient(#090d19a0,#090d19a0),url("' + customWallpaper + '")' } : {}
 
   return <main className={'da-shell wallpaper-' + wallpaper + (edit ? ' editing' : '')} style={shellStyle} onPointerUp={pointerUp} onPointerCancel={pointerUp}>
-    <header className="status-bar"><span className="brand-pill"><i /> DaBoys · DaApps</span><div><span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><button aria-label="Control Center" onClick={() => setControl(true)}>⌃</button><button aria-label="Settings" onClick={() => setPanel('settings')}>⚙</button></div></header>
     <section className="home-viewport" onPointerDown={e => { if (!edit) { startX.current = e.clientX; swipeDX.current = 0 } }} onPointerMove={pointerMove} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeDX.current + 'px))', transition: startX.current !== null && swipeDX.current !== 0 ? 'none' : 'transform .35s ease' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
           {allSlots.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE).map((id, i) => {
             const index = p * PAGE_SIZE + i
             const a = getApp(id), f = getFolder(id)
-            if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} />
+            if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
             return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
       </div>
-      {dragging && <div className="drag-ghost" style={{ left: pointer.current.x, top: pointer.current.y }}>{getApp(dragging)?.icon || '▦'}<b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
+      {dragging && <div className="drag-ghost" style={{ left: dragPosition.x, top: dragPosition.y }}>{getApp(dragging)?.icon || '▦'}<b>{getApp(dragging)?.name || getFolder(dragging)?.name}</b></div>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
-      {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<button className="done" onClick={() => setEdit(false)}>Done</button></div>}
+      {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button><span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
     </section>
     <nav className="dock">{apps.filter(a => ['economy','court','music','settings'].includes(a.id)).map(a => <button key={a.id} onClick={() => launch(a.id)}><span className={'app-icon ' + a.tone}>{a.icon}</span></button>)}</nav>
