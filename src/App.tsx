@@ -35,6 +35,12 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [dragging, setDragging] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [currentApp, setCurrentApp] = useState<string | null>(null)
+  const [recentApps, setRecentApps] = useState<string[]>([])
+  const [appSwitcher, setAppSwitcher] = useState(false)
+  const [navVisible, setNavVisible] = useState(false)
+  const navTimer = useRef<number | null>(null)
+  const gestureStart = useRef<{x:number;y:number}|null>(null)
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 })
   const audioRef = useRef<HTMLAudioElement>(null)
   const pressTimer = useRef<number | null>(null)
@@ -73,9 +79,16 @@ export default function App() {
   const launch = (id: string) => {
     const a = getApp(id)
     if (!a || edit) return
-    if (a.url) { window.location.href = a.url; return }
+    setRecentApps(prev => [id, ...prev.filter(v => v !== id)].slice(0, 8))
+    setAppSwitcher(false); setNavVisible(false)
+    if (navTimer.current) clearTimeout(navTimer.current)
+    if (a.url) { setCurrentApp(id); setPanel(null); return }
+    setCurrentApp(null)
     setPanel(a.id as 'settings' | 'music' | 'device')
   }
+  const showNav = () => { setNavVisible(true); if (navTimer.current) clearTimeout(navTimer.current); navTimer.current = window.setTimeout(() => setNavVisible(false), 2600) }
+  const goHome = () => { setCurrentApp(null); setPanel(null); setAppSwitcher(false); setNavVisible(false); if (navTimer.current) clearTimeout(navTimer.current) }
+  const closeRecent = (id: string) => { setRecentApps(prev => prev.filter(v => v !== id)); if (currentApp === id) goHome() }
   const clearPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current); pressTimer.current = null }
   const startAppPress = (id: string, e: ReactPointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
