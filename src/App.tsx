@@ -127,7 +127,7 @@ export default function App() {
     setSlots(prev => { const next = [...prev]; next[i] = null; next[j] = id; return next })
     notify('Folder created')
   }
-  const deleteDockApp = (id: string) => { setDockDeleting(id); window.setTimeout(() => { setDockApps(prev => prev.filter(v => v !== id)); setSlots(prev => prev.map(v => v === id ? null : v)); setDockDeleting(null) }, 230) }
+  const deleteDockApp = (id: string) => { setDockDeleting(id); window.setTimeout(() => { setDockApps(prev => prev.filter(v => v !== id)); setDockDeleting(null) }, 230) }
   const startDockPress = (id: string, e: ReactPointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPress.current = false
@@ -165,6 +165,13 @@ export default function App() {
         setPage(p => Math.min(pages - 1, p + 1))
         pageFlipTimer.current = window.setTimeout(() => { pageFlipTimer.current = null }, 650)
       }
+      const overDock = document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
+      if (overDock && apps.some(a=>a.id===dragSource.current) && overDock !== dragSource.current) {
+        setDockApps(prev => prev.includes(dragSource.current!) ? prev : [...prev, dragSource.current!])
+        setSlots(prev => prev.map(v => v === dragSource.current ? null : v))
+        dragTarget.current = null
+        return
+      }
       if (target && target !== dragSource.current && apps.some(a => a.id === target) && apps.some(a => a.id === dragSource.current)) {
         if (hoverTarget.current !== target) {
           if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
@@ -172,34 +179,35 @@ export default function App() {
           hoverStart.current = { x: e.clientX, y: e.clientY }
           hoverMoved.current = false
           folderHoverTimer.current = window.setTimeout(() => {
-            if (dragSource.current && hoverTarget.current === target && !hoverMoved.current) {
-              makeFolder(dragSource.current, target)
-              dragSource.current = null; dragTarget.current = null; setDragging(null)
-            } else if (dragSource.current && hoverTarget.current === target) {
-              setSlots(prev => {
-                const next = [...prev], a = next.indexOf(dragSource.current!), b = next.indexOf(target)
-                if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
-                return next
-              })
-              dragTarget.current = null
+            if (dragSource.current && hoverTarget.current === target) {
+              if (hoverMoved.current) {
+                setSlots(prev => {
+                  const next=[...prev], a=next.indexOf(dragSource.current!), b=next.indexOf(target)
+                  if(a>=0&&b>=0&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)}
+                  return next
+                })
+                lastDragTarget.current = target
+              } else {
+                makeFolder(dragSource.current, target)
+                dragSource.current = null; dragTarget.current = null; setDragging(null)
+              }
             }
             folderHoverTimer.current = null
-          }, 650)
+          }, 300)
         }
         if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 18) hoverMoved.current = true
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
         folderHoverTimer.current = null; hoverTarget.current = null; lastDragTarget.current = null
-        if (target && target !== dragSource.current) {
-          const from = dragSource.current
-          if (from && target.startsWith('empty-')) {
-            setSlots(prev => {
-              const next = [...prev], a = next.indexOf(from), b = Number(target.slice(6))
-              if (a >= 0 && b >= 0 && b < next.length) { next[b] = from; next[a] = null }
-              return next
-            })
-            dragTarget.current = null
-          }
+        if (target && target !== dragSource.current && target.startsWith('empty-')) {
+          const from=dragSource.current
+          setSlots(prev => {
+            const next=[...prev], a=next.indexOf(from!), b=Number(target.slice(6))
+            if(a>=0&&b>=0&&b<next.length&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)}
+            return next
+          })
+          lastDragTarget.current = target
+          dragTarget.current = null
         }
       }
       return
@@ -215,7 +223,7 @@ export default function App() {
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
-      if (to && to !== from && !to.startsWith('empty-')) {
+      if (to && to !== from && !to.startsWith('empty-') && lastDragTarget.current !== to) {
         setSlots(prev => {
           const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
           if (a >= 0 && b >= 0) [next[a], next[b]] = [next[b], next[a]]
@@ -277,7 +285,7 @@ export default function App() {
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
     </section>
-    <nav className={'dock' + (edit ? ' dock-editing' : '')}>{dockApps.map(id=>{const a=getApp(id);return a?<button key={id} data-dock={id} className={dockDeleting===id?'deleting':''} onPointerDown={e=>startDockPress(id,e)} onClick={()=>{if(edit&&!dragging)deleteDockApp(id);else if(!edit&&!longPress.current)launch(id)}}><span className={'app-icon '+a.tone}>{a.icon}</span>{edit&&<span className="dock-remove" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();deleteDockApp(id)}}>−</span>}</button>:null})}</nav>
+    <nav className={'dock' + (edit ? ' dock-editing' : '')}>{dockApps.map(id=>{const a=getApp(id);return a?<button key={id} data-dock={id} className={dockDeleting===id?'deleting':''} onPointerDown={e=>startDockPress(id,e)} onClick={()=>{if(!edit&&!longPress.current)launch(id)}}><span className={'app-icon '+a.tone}>{a.icon}</span>{edit&&<span className="dock-remove" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();deleteDockApp(id)}}>−</span>}</button>:null})}</nav>
     {folderOpen && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setFolderOpen(null) }}><section className="folder-window"><header><b>{getFolder(folderOpen)?.name || 'Folder'}</b><div><button onClick={() => { setFolderName(getFolder(folderOpen)?.name || 'Folder'); setRename(folderOpen); setFolderOpen(null) }}>Rename</button><button onClick={() => setFolderOpen(null)}>×</button></div></header><div className="folder-apps">{(getFolder(folderOpen)?.apps || []).map(id => { const a = getApp(id); return a ? <button key={id} onClick={() => { setFolderOpen(null); launch(id) }}><span className={'app-icon ' + a.tone}>{a.icon}</span><b>{a.name}</b></button> : null })}</div></section></div>}
     {panel && <div className="veil" onPointerDown={e => { if (e.target === e.currentTarget) setPanel(null) }}><section className="panel-window"><header><div><b>{panel === 'music' ? 'DaMusic' : panel === 'settings' ? 'Settings' : 'DeviceTest'}</b><small>{panel === 'music' ? 'DaBoys Radio' : 'DaApps preferences'}</small></div><button onClick={() => setPanel(null)}>×</button></header>
       {panel === 'settings' && <div className="panel-content"><h3>Wallpaper</h3><p>Choose a look or use your own image. Your settings are saved on this device.</p><div className="wallpaper-list">{['aurora','midnight','sunset','ocean'].map(w => <button key={w} className={'wallpaper-swatch ' + w + (wallpaper === w ? ' selected' : '')} onClick={() => { setWallpaper(w); setCustomWallpaper('') }}>{w}</button>)}<label className="wallpaper-swatch upload">＋ My image<input type="file" accept="image/*" onChange={e => uploadWallpaper(e.target.files?.[0])} /></label></div>{customWallpaper && <button className="remove-wall" onClick={() => { setCustomWallpaper(''); setWallpaper('aurora') }}>Remove custom image</button>}<p className="setting-note">{apps.length} apps · layout, folders and wallpaper saved locally</p></div>}
