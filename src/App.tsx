@@ -263,22 +263,26 @@ export default function App() {
       if (Math.abs(dx) > 10) clearPress()
     }
   }
+  const touchOrigin = useRef({x:0,y:0})
   const touchStart = (e: React.TouchEvent<HTMLElement>) => {
     if (dragging || edit) return
+    touchOrigin.current = {x:e.touches[0].clientX,y:e.touches[0].clientY}
     startX.current = e.touches[0].clientX
     swipeDX.current = 0
     setSwipeOffset(0)
   }
   const touchMove = (e: React.TouchEvent<HTMLElement>) => {
     if (startX.current === null || dragging) return
-    const dx = e.touches[0].clientX - startX.current
+    const dx = e.touches[0].clientX - touchOrigin.current.x
     swipeDX.current = dx
     setSwipeOffset(dx)
     if (Math.abs(dx) > 8) clearPress()
   }
-  const touchEnd = () => {
-    if (startX.current !== null && Math.abs(swipeDX.current) > 45) {
-      setPage(p => Math.max(0, Math.min(pages - 1, p + (swipeDX.current < 0 ? 1 : -1))))
+  const touchEnd = (e: React.TouchEvent<HTMLElement>) => {
+    const dx = e.changedTouches[0].clientX - touchOrigin.current.x
+    if (startX.current !== null && Math.abs(dx) > 45) {
+      const delta = dx < 0 ? 1 : -1
+      setPage(p => Math.max(0, Math.min(pages - 1, p + delta)))
     }
     startX.current = null
     swipeDX.current = 0
