@@ -286,3 +286,8 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .app-fullscreen{transform-origin:center center!important;animation:app-open .34s cubic-bezier(.2,.8,.2,1) both!important}
 .internal-veil .panel-window{animation:app-open .34s cubic-bezier(.2,.8,.2,1) both!important;transform-origin:center center!important}
 .live-drag-tile.releasing{animation:none!important;transition:none!important;will-change:left,top,transform!important}
+
+/* Let hit-testing pass through the floating icon so dock and empty slots can receive drops. */
+.live-drag-tile{pointer-events:none!important}
+.dock{position:relative;z-index:30;pointer-events:auto}
+.dock button{position:relative;pointer-events:auto;touch-action:none}
