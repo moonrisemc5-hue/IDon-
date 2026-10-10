@@ -208,3 +208,24 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
   82%{scale:1.035;opacity:1}
   100%{scale:.96;opacity:.82;filter:drop-shadow(0 3px 4px #0002)}
 }
+
+/* Fixed overlay is visible even when the tile itself has complex button styles. */
+.folder-target-highlight{
+  position:fixed!important;
+  z-index:72!important;
+  pointer-events:none!important;
+  border:2.5px solid rgba(255,255,255,.98)!important;
+  border-radius:22px!important;
+  background:rgba(255,255,255,.12)!important;
+  box-shadow:0 0 0 6px rgba(255,255,255,.2),0 0 22px rgba(255,255,255,.48),inset 0 0 18px rgba(255,255,255,.12)!important;
+  animation:folder-target-overlay-pulse .58s ease-in-out infinite alternate!important;
+}
+@keyframes folder-target-overlay-pulse{
+  from{transform:scale(.96);opacity:.7}
+  to{transform:scale(1.05);opacity:1}
+}
+/* Explicitly animate the floating icon from finger position to its drop slot. */
+.live-drag-tile.releasing{
+  transition:left .62s cubic-bezier(.16,1,.3,1),top .62s cubic-bezier(.16,1,.3,1),opacity .62s ease!important;
+  animation:drag-release-settle .62s cubic-bezier(.16,1,.3,1) both!important;
+}
