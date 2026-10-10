@@ -248,39 +248,59 @@ export default function App() {
         pointer.current = {x:e.clientX,y:e.clientY}
         setDragPosition({x:e.clientX,y:e.clientY})
         const source = dragSource.current.slice(5)
-        // Ignore the floating drag ghost when hit-testing so the dock underneath remains targetable.
-        const underFinger = document.elementsFromPoint(e.clientX,e.clientY).find(el => !(el as HTMLElement).closest('.live-drag-tile'))
-        const dockTarget = underFinger?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
-        if (dockTarget && dockTarget !== source && hoverTarget.current !== dockTarget) {
-          hoverTarget.current = dockTarget
-          setDockApps(prev => { const next=[...prev],a=next.indexOf(source),b=next.indexOf(dockTarget); if(a>=0&&b>=0){const [item]=next.splice(a,1);next.splice(b,0,item)} return next })
-          dragTarget.current = 'dock-' + dockTarget
+        const dockEl = document.querySelector<HTMLElement>('.dock')
+        const dockRect = dockEl?.getBoundingClientRect()
+        const insideDock = !!dockRect && e.clientX >= dockRect.left && e.clientX <= dockRect.right && e.clientY >= dockRect.top && e.clientY <= dockRect.bottom
+        if (insideDock) {
+          const buttons = Array.from(document.querySelectorAll<HTMLElement>('.dock [data-dock]'))
+          let nearest = source, nearestIndex = -1, distance = Infinity
+          buttons.forEach((button,index) => {
+            const r=button.getBoundingClientRect(), d=Math.abs(e.clientX-(r.left+r.width/2))
+            if(d<distance){distance=d;nearest=button.dataset.dock||source;nearestIndex=index}
+          })
+          if(nearest !== source && hoverTarget.current !== nearest) {
+            hoverTarget.current=nearest
+            setDockApps(prev => {
+              const next=[...prev], fromIndex=next.indexOf(source), toIndex=next.indexOf(nearest)
+              if(fromIndex<0)return prev
+              const [item]=next.splice(fromIndex,1)
+              const insertAt=toIndex<0?next.length:Math.max(0,Math.min(toIndex+(fromIndex<toIndex?1:0),next.length))
+              next.splice(insertAt,0,item)
+              return next
+            })
+            dragTarget.current='dock-'+nearest
+          }
           return
         }
-        // Dragging from the dock into the home grid removes it from the dock
-        // and inserts it at the hovered slot, allowing the drop to work in either direction.
-        const gridTarget = underFinger?.closest<HTMLElement>('[data-slot]')?.dataset.slot || null
-        if (gridTarget) {
-          const emptyIndex = gridTarget.startsWith('empty-') ? Number(gridTarget.slice(6)) : -1
-          setDockApps(prev => prev.filter(id => id !== source))
-          setSlots(prev => {
+        // Find the nearest home-screen slot geometrically; don't depend on iOS elementFromPoint.
+        const gridCandidates=Array.from(document.querySelectorAll<HTMLElement>('.home-page .app-grid [data-slot]'))
+          .filter(el=>el.dataset.slot && el.getClientRects().length>0)
+        let nearestSlot:HTMLElement|null=null, nearestDistance=Infinity
+        gridCandidates.forEach(el=>{
+          const r=el.getBoundingClientRect()
+          const dx=e.clientX<r.left?r.left-e.clientX:e.clientX>r.right?e.clientX-r.right:0
+          const dy=e.clientY<r.top?r.top-e.clientY:e.clientY>r.bottom?e.clientY-r.bottom:0
+          const d=Math.hypot(dx,dy)
+          if(d<nearestDistance){nearestDistance=d;nearestSlot=el}
+        })
+        const gridTarget=nearestDistance<130?nearestSlot?.dataset.slot||null:null
+        if(gridTarget){
+          const emptyIndex=gridTarget.startsWith('empty-')?Number(gridTarget.slice(6)):-1
+          setDockApps(prev=>prev.filter(id=>id!==source))
+          setSlots(prev=>{
             const next=[...prev]
             const old=next.indexOf(source)
-            if(old>=0) next[old]=null
-            if (emptyIndex >= 0) {
-              while (next.length <= emptyIndex) next.push(null)
-              next[emptyIndex] = source
-              return next
-            }
+            if(old>=0)next[old]=null
+            if(emptyIndex>=0){while(next.length<=emptyIndex)next.push(null);next[emptyIndex]=source;return next}
             const targetIndex=next.indexOf(gridTarget)
-            if(targetIndex<0) return next
+            if(targetIndex<0)return next
             next.splice(targetIndex,0,source)
             return next
           })
-          dragSource.current = source
-          dragTarget.current = gridTarget
+          dragSource.current=source
+          dragTarget.current=gridTarget
           setDragging(source)
-          hoverTarget.current = null
+          hoverTarget.current=null
           return
         }
         return
@@ -299,11 +319,29 @@ export default function App() {
         setPage(p => Math.min(pages - 1, p + 1))
         pageFlipTimer.current = window.setTimeout(() => { pageFlipTimer.current = null }, 650)
       }
-      const overDock = document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
-      if (overDock && apps.some(a=>a.id===dragSource.current) && overDock !== dragSource.current) {
-        setDockApps(prev => prev.includes(dragSource.current!) ? prev : [...prev, dragSource.current!])
-        setSlots(prev => prev.map(v => v === dragSource.current ? null : v))
-        dragTarget.current = null
+      const dockEl = document.querySelector<HTMLElement>('.dock')
+      const dockRect = dockEl?.getBoundingClientRect()
+      const insideDock = !!dockRect && e.clientX >= dockRect.left && e.clientX <= dockRect.right && e.clientY >= dockRect.top && e.clientY <= dockRect.bottom
+      if (insideDock && apps.some(a=>a.id===dragSource.current)) {
+        const source=dragSource.current!
+        const buttons=Array.from(document.querySelectorAll<HTMLElement>('.dock [data-dock]'))
+        let insertAt=dockApps.length, bestDistance=Infinity
+        buttons.forEach((button,index)=>{
+          const r=button.getBoundingClientRect(), center=r.left+r.width/2
+          const d=Math.abs(e.clientX-center)
+          if(d<bestDistance){bestDistance=d;insertAt=index+(e.clientX>center?1:0)}
+        })
+        setDockApps(prev=>{
+          if(prev.includes(source))return prev
+          const next=[...prev]
+          next.splice(Math.max(0,Math.min(insertAt,next.length)),0,source)
+          return next
+        })
+        setSlots(prev=>prev.map(v=>v===source?null:v))
+        dragSource.current='dock-'+source
+        dragTarget.current=null
+        hoverTarget.current=null
+        setDragging('dock-'+source)
         return
       }
       // Prefer the tile under the finger; if the finger is in a gap, use the nearest tile.
