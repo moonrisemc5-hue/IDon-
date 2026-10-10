@@ -234,6 +234,7 @@ export default function App() {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPress.current = false
     pointer.current = { x: e.clientX, y: e.clientY }
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
     pressTimer.current = window.setTimeout(() => {
       longPress.current = true; setEdit(true)
       dragSource.current = 'dock-' + id; dragTarget.current = 'dock-' + id
@@ -271,6 +272,7 @@ export default function App() {
           })
           dragSource.current = source
           dragTarget.current = gridTarget
+          setDragging(source)
           hoverTarget.current = null
           return
         }
