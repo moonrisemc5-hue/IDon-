@@ -385,6 +385,12 @@ export default function App() {
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
+      // Capture the destination before the grid rerenders, then glide the floating icon into it.
+      const landingTarget = to ? Array.from(document.querySelectorAll<HTMLElement>('[data-slot]')).find(el => el.dataset.slot === to) : undefined
+      if (landingTarget) {
+        const rect = landingTarget.getBoundingClientRect()
+        setDragPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
+      }
       if (folderReadyTarget.current && folderReadyTarget.current === to && apps.some(a => a.id === from) && apps.some(a => a.id === to)) {
         makeFolder(from, to)
       }
