@@ -34,6 +34,8 @@ export default function App() {
   const [volume, setVolume] = useState(65)
   const [toast, setToast] = useState('')
   const [dragging, setDragging] = useState<string | null>(null)
+  const [settlingId, setSettlingId] = useState<string | null>(null)
+  const settleTimer = useRef<number | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [currentApp, setCurrentApp] = useState<string | null>(null)
   const [recentApps, setRecentApps] = useState<string[]>([])
@@ -58,15 +60,18 @@ export default function App() {
         const before = key ? layoutPositions.current.get(key) : undefined
         const after = el.getBoundingClientRect()
         if (!before || (Math.abs(before.left-after.left)<1 && Math.abs(before.top-after.top)<1)) return
+        const dx = before.left - after.left
+        const dy = before.top - after.top
+        // Use the individual translate property so it does not fight the jiggle's transform animation.
         el.style.transition = 'none'
-        el.style.transform = 'translate(' + (before.left-after.left) + 'px,' + (before.top-after.top) + 'px)'
-        el.style.zIndex = '2'
+        el.style.translate = dx + 'px ' + dy + 'px'
+        el.style.zIndex = '3'
       })
       if (layoutFrame.current !== null) cancelAnimationFrame(layoutFrame.current)
       layoutFrame.current = requestAnimationFrame(() => {
         nodes.forEach(el => {
-          el.style.transition = 'transform .46s cubic-bezier(.22,.8,.25,1)'
-          el.style.transform = ''
+          el.style.transition = 'translate .58s cubic-bezier(.2,.75,.25,1)'
+          el.style.translate = '0px 0px'
           el.style.zIndex = ''
         })
         layoutFrame.current = null
@@ -384,6 +389,11 @@ export default function App() {
         makeFolder(from, to)
       }
       folderReadyTarget.current = null
+      if (!from.startsWith('dock-')) {
+        setSettlingId(from)
+        if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
+        settleTimer.current = window.setTimeout(() => { setSettlingId(null); settleTimer.current = null }, 560)
+      }
       dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
       if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
       if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
@@ -433,7 +443,7 @@ export default function App() {
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
             if (dragging === id) return <div key={id} className="drag-placeholder" data-slot={'empty-' + index} />
-            return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
+            return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
       </div>
