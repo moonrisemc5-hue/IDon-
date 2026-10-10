@@ -36,6 +36,9 @@ export default function App() {
   const [dragging, setDragging] = useState<string | null>(null)
   const [settlingId, setSettlingId] = useState<string | null>(null)
   const settleTimer = useRef<number | null>(null)
+  const [folderCandidateId, setFolderCandidateId] = useState<string | null>(null)
+  const [releasingDragId, setReleasingDragId] = useState<string | null>(null)
+  const releaseTimer = useRef<number | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [currentApp, setCurrentApp] = useState<string | null>(null)
   const [recentApps, setRecentApps] = useState<string[]>([])
@@ -109,7 +112,7 @@ export default function App() {
     if (playing && panel === 'music') void a.play().catch(() => setPlaying(false))
     else a.pause()
   }, [playing, panel, track, volume])
-  useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current) }, [])
+  useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current); if (settleTimer.current !== null) clearTimeout(settleTimer.current); if (releaseTimer.current !== null) clearTimeout(releaseTimer.current) }, [])
 
   const notify = (s: string) => { setToast(s); window.setTimeout(() => setToast(''), 2000) }
   const allSlots = [...slots]
@@ -254,6 +257,7 @@ export default function App() {
         const fraction = targetRect ? (e.clientX - targetRect.left) / Math.max(1, targetRect.width) : 0.5
         const isAppPair = !isEmpty && apps.some(a => a.id === from) && apps.some(a => a.id === target)
         const centerFolderZone = isAppPair && fraction >= 0.32 && fraction <= 0.68
+        setFolderCandidateId(centerFolderZone ? target : null)
         const zone = isEmpty ? 'empty' : centerFolderZone ? 'center' : (fraction < 0.5 ? 'left' : 'right')
         const hoverKey = target + ':' + zone
         if (hoverTarget.current !== hoverKey) {
@@ -307,6 +311,7 @@ export default function App() {
         folderHoverTimer.current = null
         hoverTarget.current = null
         folderReadyTarget.current = null
+        setFolderCandidateId(null)
         lastDragTarget.current = null
       }
       return
@@ -386,9 +391,13 @@ export default function App() {
       folderReadyTarget.current = null
       if (!from.startsWith('dock-')) {
         setSettlingId(from)
+        setReleasingDragId(from)
         if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
-        settleTimer.current = window.setTimeout(() => { setSettlingId(null); settleTimer.current = null }, 560)
+        if (releaseTimer.current !== null) window.clearTimeout(releaseTimer.current)
+        settleTimer.current = window.setTimeout(() => { setSettlingId(null); settleTimer.current = null }, 760)
+        releaseTimer.current = window.setTimeout(() => { setReleasingDragId(null); releaseTimer.current = null }, 340)
       }
+      setFolderCandidateId(null)
       dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
       if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
       if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
@@ -434,15 +443,15 @@ export default function App() {
             const index = p * PAGE_SIZE + i
             const a = getApp(id), f = getFolder(id)
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
-            if (f && dragging === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
+            if (f && (dragging === id || releasingDragId === id)) return <div key={id} className="drag-placeholder" aria-hidden="true" />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
-            if (dragging === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
-            return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
+            if (dragging === id || releasingDragId === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
+            return <button key={id} className={'app-tile ' + (folderCandidateId === id ? 'folder-candidate ' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className="app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
       </div>
-      {dragging && <button className="app-tile live-drag-tile" style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging) ? <><span className={'app-icon '+getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.tone}>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.icon}</span><b>{getApp(dragging.startsWith('dock-')?dragging.slice(5):dragging)!.name}</b></> : getFolder(dragging) ? <><span className="folder-icon">{getFolder(dragging)!.apps.slice(0,4).map(appId=>{const fa=getApp(appId);return fa?<i key={appId} className={'folder-mini '+fa.tone}>{fa.icon}</i>:null})}</span><b>{getFolder(dragging)!.name}</b></> : null}</button>}
+      {(dragging || releasingDragId) && <button className={'app-tile live-drag-tile' + (releasingDragId ? ' releasing' : '')} style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || '')) ? <><span className={'app-icon '+getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.tone}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.icon}</span><b>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.name}</b></> : getFolder(dragging || releasingDragId || '') ? <><span className="folder-icon">{getFolder(dragging || releasingDragId || '')!.apps.slice(0,4).map(appId=>{const fa=getApp(appId);return fa?<i key={appId} className={'folder-mini '+fa.tone}>{fa.icon}</i>:null})}</span><b>{getFolder(dragging || releasingDragId || '')!.name}</b></> : null}</button>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
