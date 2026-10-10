@@ -434,10 +434,10 @@ export default function App() {
             const index = p * PAGE_SIZE + i
             const a = getApp(id), f = getFolder(id)
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
-            if (f && dragging === id) return <div key={id} className="drag-placeholder" data-slot={'empty-' + index} />
+            if (f && dragging === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
-            if (dragging === id) return <div key={id} className="drag-placeholder" data-slot={'empty-' + index} />
+            if (dragging === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
             return <button key={id} className={'app-tile ' + (dragging === id ? 'dragging' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
