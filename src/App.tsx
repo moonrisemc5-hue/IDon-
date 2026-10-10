@@ -212,9 +212,9 @@ export default function App() {
       if (folderSource.current && Math.hypot(e.clientX-folderDragOrigin.current.x,e.clientY-folderDragOrigin.current.y)>20) folderDragMoved.current = true
       pointer.current = { x: e.clientX, y: e.clientY }
       setDragPosition({ x: e.clientX, y: e.clientY })
-      const targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
-      const target = targetEl?.dataset.slot || null
-      dragTarget.current = target
+      const initialTargetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
+      const initialTarget = initialTargetEl?.dataset.slot || null
+      dragTarget.current = initialTarget
       if (e.clientX < 28 && page > 0 && !pageFlipTimer.current) {
         setPage(p => Math.max(0, p - 1))
         pageFlipTimer.current = window.setTimeout(() => { pageFlipTimer.current = null }, 650)
