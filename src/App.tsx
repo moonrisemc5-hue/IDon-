@@ -12,6 +12,28 @@ const apps: AppInfo[] = [
 ]
 const tracks = Array.from({ length: 8 }, (_, i) => ({ title: 'DaBoys Radio ' + String(i + 1).padStart(2, '0'), url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-' + (i + 1) + '.mp3' }))
 const PAGE_SIZE = 24
+
+function AppMark({ app, compact = false }: { app: AppInfo; compact?: boolean }) {
+  const className = compact
+    ? 'folder-mini brand-' + app.id
+    : 'app-icon ' + app.tone + ' brand-' + app.id
+  if (app.id === 'economy') return <span className={className} aria-label="DaEconomy bank logo">
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M5 17 24 7 43 17Z" fill="currentColor"/>
+      <path d="M8 19H40M6 40H42M9 43H39" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M12 21V37M20 21V37M28 21V37M36 21V37" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+    </svg>
+  </span>
+  if (app.id === 'court') return <span className={className} aria-label="DaCourt scales logo">
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 7V39M17 41H31M20 12H28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M24 11 10 17M24 11 38 17" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M10 17 4 29H16Z M38 17 32 29H44Z" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"/>
+      <path d="M4 29Q10 36 16 29M32 29Q38 36 44 29" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  </span>
+  return <span className={className}>{app.icon}</span>
+}
 const baseSlots = (): (string | null)[] => [...apps.map(a => a.id), ...Array(PAGE_SIZE - apps.length).fill(null)]
 function read<T>(key: string, fallback: T): T { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) as T : fallback } catch { return fallback } }
 
@@ -453,7 +475,7 @@ export default function App() {
       </div>
       {navVisible && <div className="app-nav-controls"><button aria-label="Recent apps" onClick={() => {setAppSwitcher(true);setNavVisible(false)}}>☰</button></div>}
     </section>}
-    {appSwitcher && <div className="app-switcher" onClick={e => {if(e.target===e.currentTarget)goHome()}}><div className="switcher-cards">{recentApps.map(id=>{const a=getApp(id);return a?<div role="button" tabIndex={0} className={'recent-card' + (closingRecent===id?' closing':'')} key={id} onPointerDown={e=>{(e.currentTarget as HTMLElement).dataset.startY=String(e.clientY);suppressSwitcherClick.current=false}} onPointerUp={e=>{const y=Number((e.currentTarget as HTMLElement).dataset.startY||0);if(y-e.clientY>65){suppressSwitcherClick.current=true;closeRecent(id)}}} onClick={()=>{if(suppressSwitcherClick.current){suppressSwitcherClick.current=false;return}setAppSwitcher(false);launch(id)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setAppSwitcher(false);launch(id)}}}><div className="recent-preview"><span className={'app-icon '+a.tone}>{a.icon}</span><b>{a.name}</b><small>Tap to open</small></div></div>:null})}</div></div>}
+    {appSwitcher && <div className="app-switcher" onClick={e => {if(e.target===e.currentTarget)goHome()}}><div className="switcher-cards">{recentApps.map(id=>{const a=getApp(id);return a?<div role="button" tabIndex={0} className={'recent-card' + (closingRecent===id?' closing':'')} key={id} onPointerDown={e=>{(e.currentTarget as HTMLElement).dataset.startY=String(e.clientY);suppressSwitcherClick.current=false}} onPointerUp={e=>{const y=Number((e.currentTarget as HTMLElement).dataset.startY||0);if(y-e.clientY>65){suppressSwitcherClick.current=true;closeRecent(id)}}} onClick={()=>{if(suppressSwitcherClick.current){suppressSwitcherClick.current=false;return}setAppSwitcher(false);launch(id)}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){setAppSwitcher(false);launch(id)}}}><div className="recent-preview"><AppMark app={a} /><b>{a.name}</b><small>Tap to open</small></div></div>:null})}</div></div>}
     <section className={'home-viewport' + (currentApp ? ' home-hidden' : '')} onPointerDown={e => { if (e.pointerType !== 'touch' && !dragging) { startX.current = e.clientX; swipeDX.current = 0; setSwipeOffset(0); try { e.currentTarget.setPointerCapture(e.pointerId) } catch {} } }} onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd} onContextMenu={e => e.preventDefault()}>
       <div className="page-track" style={{ transform: 'translateX(calc(-' + page * 100 + 'vw + ' + swipeOffset + 'px))', transition: startX.current !== null && swipeOffset !== 0 ? 'none' : 'transform .5s cubic-bezier(.22,.8,.25,1)' }}>
         {Array.from({ length: pages }, (_, p) => <div className="home-page" key={p}><div className="app-grid">
@@ -462,15 +484,15 @@ export default function App() {
             const a = getApp(id), f = getFolder(id)
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
             if (f && (dragging === id || releasingDragId === id)) return <div key={id} className="drag-placeholder" aria-hidden="true" />
-            if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <i key={appId} className={'folder-mini ' + fa.tone}>{fa.icon}</i> : null })}</span><b>{f.name}</b></button>
+            if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <AppMark key={appId} app={fa} compact /> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
             if (dragging === id || releasingDragId === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
-            return <button key={id} className={'app-tile ' + (folderCandidateId === id ? 'folder-candidate ' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<span className={'app-icon ' + a.tone}>{a.icon}</span><b>{id === 'device' ? 'hello' : a.name}</b></button>
+            return <button key={id} className={'app-tile ' + (folderCandidateId === id ? 'folder-candidate ' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<AppMark app={a} /><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
       </div>
       {folderCandidateRect && dragging && <div className="folder-target-highlight" aria-hidden="true" style={{left:folderCandidateRect.left,top:folderCandidateRect.top,width:folderCandidateRect.width,height:folderCandidateRect.height}} />}
-      {(dragging || releasingDragId) && <button className={'app-tile live-drag-tile' + (releasingDragId ? ' releasing' : '')} style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || '')) ? <><span className={'app-icon '+getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.tone}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.icon}</span><b>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.name}</b></> : getFolder(dragging || releasingDragId || '') ? <><span className="folder-icon">{getFolder(dragging || releasingDragId || '')!.apps.slice(0,4).map(appId=>{const fa=getApp(appId);return fa?<i key={appId} className={'folder-mini '+fa.tone}>{fa.icon}</i>:null})}</span><b>{getFolder(dragging || releasingDragId || '')!.name}</b></> : null}</button>}
+      {(dragging || releasingDragId) && <button className={'app-tile live-drag-tile' + (releasingDragId ? ' releasing' : '')} style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || '')) ? <><AppMark app={getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!} /><b>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.name}</b></> : getFolder(dragging || releasingDragId || '') ? <><span className="folder-icon">{getFolder(dragging || releasingDragId || '')!.apps.slice(0,4).map(appId=>{const fa=getApp(appId);return fa?<AppMark key={appId} app={fa} compact />:null})}</span><b>{getFolder(dragging || releasingDragId || '')!.name}</b></> : null}</button>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
       {!edit && <p className="gesture-hint">Touch and hold an app to edit · Swipe between pages</p>}
