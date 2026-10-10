@@ -35,7 +35,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .folder-mini.gold{background:linear-gradient(145deg,#f9c95f,#c87826)}.folder-mini.blue{background:linear-gradient(145deg,#70b9ff,#3155b8)}.folder-mini.pink{background:linear-gradient(145deg,#ff8ac6,#9c42b7)}.folder-mini.grey{background:linear-gradient(145deg,#9ba9bd,#46546c)}.folder-mini.green{background:linear-gradient(145deg,#77e7bd,#168a7b)}
 .editing .app-tile{animation:icon-jiggle .19s ease-in-out infinite alternate;transform-origin:50% 50%;transition:translate .58s cubic-bezier(.2,.75,.25,1),filter .38s,opacity .35s}
 .editing .app-tile:nth-child(3n){animation-delay:-.13s}.editing .app-tile:nth-child(2n){animation-delay:-.07s}
-@keyframes icon-jiggle{from{transform:rotate(-1.7deg)}to{transform:rotate(1.7deg)}}
+@keyframes icon-jiggle{from{transform:rotate(-2deg)}to{transform:rotate(2deg)}}
 @keyframes lift-icon{from{opacity:.6;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-58%) scale(1.08) rotate(-2deg)}}
 .app-tile:not(.dragging){transition:translate .58s cubic-bezier(.2,.75,.25,1),transform .28s cubic-bezier(.2,.8,.2,1),filter .38s}
 .app-grid .app-tile{transition:translate .58s cubic-bezier(.2,.75,.25,1),transform .28s cubic-bezier(.2,.8,.2,1),filter .4s,opacity .38s}
@@ -87,7 +87,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .confirm-window{width:min(100%,350px);padding:22px}.confirm-window input{width:100%;border:1px solid #ffffff2a;border-radius:12px;background:#0b1020;color:#fff;padding:12px;margin:5px 0 18px;outline-offset:2px}.confirm-window footer{display:flex;justify-content:flex-end;gap:9px}.confirm-window .remove-confirm{background:#ef6673;color:#fff;border-color:#ef6673}
 .empty-slot{min-width:0;min-height:0;border-radius:12px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .2s,box-shadow .2s,transform .2s}.editing .empty-slot:active{background:#ffffff0a;box-shadow:inset 0 0 0 1px #ffffff12;transform:scale(.98)}.toast{position:fixed;z-index:70;left:50%;bottom:calc(125px + env(safe-area-inset-bottom));transform:translateX(-50%);padding:11px 17px;border-radius:14px;background:#f6f7ff;color:#141a2b;font-size:12px;font-weight:700;box-shadow:0 10px 28px #0004;white-space:nowrap}
 @media(min-width:650px){.status-bar{display:none}.home-page{padding-top:24px}.app-grid{grid-template-rows:repeat(6,minmax(0,1fr));gap:6px 10px;max-width:540px}.app-icon{width:63px;height:63px;border-radius:19px;font-size:31px}.folder-icon{width:63px;height:63px;border-radius:19px}.dock{margin-top:10px}.home-viewport{min-height:540px}}
-@media(max-height:700px){.quick-arrow{top:calc(env(safe-area-inset-top) + 5px)}.status-bar{display:none}.home-page{padding-top:4px}.app-grid{grid-template-rows:repeat(6,minmax(0,1fr));gap:5px 5px}.app-icon,.folder-icon{width:clamp(36px,5.8vh,46px);height:clamp(36px,5.8vh,46px);border-radius:14px}.app-icon{font-size:24px}.dock{min-height:68px;padding:8px 13px;margin-top:4px}.dock .app-icon{width:46px;height:46px}.gesture-hint{margin-bottom:5px}.app-grid{gap:3px 5px}.app-tile b{font-size:10px;line-height:12px;flex-basis:12px}}
+@media(max-height:700px){.quick-arrow{top:calc(env(safe-area-inset-top) + 5px)}.status-bar{display:none}.home-page{padding-top:4px}.app-grid{grid-template-rows:repeat(6,minmax(0,1fr));gap:3px 5px}.app-icon,.folder-icon{width:clamp(49px,7.5vh,60px);height:clamp(49px,7.5vh,60px);border-radius:16px}.app-icon{font-size:29px}.dock{min-height:68px;padding:8px 13px;margin-top:4px}.dock .app-icon{width:49px;height:49px}.gesture-hint{margin-bottom:5px}.app-tile b{font-size:10px;line-height:12px;flex-basis:12px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 
 /* iPhone-like full-screen app and switcher */
@@ -121,7 +121,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .dock{touch-action:none}
 .dock button{position:relative}.dock .dock-source-hidden{opacity:.18;transform:scale(.9)}
 .dock-remove{position:absolute;z-index:4;left:-6px;top:-7px;width:21px;height:21px;display:grid;place-items:center;border-radius:50%;background:#f0f2f8;color:#222a3b;font-size:19px;font-weight:800;box-shadow:0 2px 8px #0006;animation:nav-fade-in .18s ease both}
-.dock-editing button{animation:icon-jiggle .32s ease-in-out infinite alternate}
+.dock-editing button{animation:icon-jiggle .18s ease-in-out infinite alternate}
 .dock-editing button:nth-child(2n){animation-delay:-.1s}
 .dock button.deleting{animation:delete-pop .23s ease forwards}
 @media(prefers-reduced-motion:reduce){.app-fullscreen,.app-switcher,.recent-card,.app-nav-controls,.drag-placeholder,.live-drag-tile{animation:none!important}}
@@ -129,7 +129,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 /* Slower, softer motion for home-screen organization */
 .page-track{transition:transform .58s cubic-bezier(.22,.8,.25,1)}
 .app-grid .app-tile,.app-tile:not(.dragging){transition:transform .48s cubic-bezier(.22,.8,.25,1),filter .48s,opacity .42s}
-.editing .app-tile{animation:icon-jiggle .5s ease-in-out infinite alternate;transition:transform .48s cubic-bezier(.22,.8,.25,1),filter .48s,opacity .42s}
+.editing .app-tile{animation:icon-jiggle .18s ease-in-out infinite alternate;transform-origin:50% 50%;transition:filter .2s,opacity .2s}
 .empty-slot,.drag-placeholder{transition:background .48s cubic-bezier(.22,.8,.25,1),box-shadow .48s,transform .48s,opacity .42s}
 .folder-window{animation:window-pop .42s cubic-bezier(.22,.8,.25,1) both}
 .folder-apps button{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .42s,filter .42s}
@@ -143,7 +143,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 
 /* Slower, more deliberate iPhone-style organizing */
 .app-grid .app-tile,.empty-slot,.drag-placeholder,.folder-apps button,.dock button{transition:translate .58s cubic-bezier(.2,.75,.25,1),transform .3s cubic-bezier(.2,.8,.2,1),opacity .48s ease,filter .38s ease}
-.drag-placeholder{background:transparent!important;border-color:transparent!important;box-shadow:none!important;transform:none;animation:none!important}
+.drag-placeholder{background:none!important;border:0!important;outline:0!important;box-shadow:none!important;transform:none!important;animation:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}
 .recent-card{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .38s ease}
 
 /* Bottom-edge gestures must win over embedded content on touch screens. */
@@ -166,3 +166,14 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .app-tile.dragging{opacity:0!important;visibility:hidden!important;outline:none!important;box-shadow:none!important}
 .app-tile.settling{animation:icon-land .72s cubic-bezier(.16,1,.3,1) both!important}
 .editing .app-tile.settling{animation:icon-land-edit .72s cubic-bezier(.16,1,.3,1) both!important}
+
+/* Final home-screen tuning: larger tiles and brisk iPhone-like wiggle */
+.app-grid .app-icon,.app-grid .folder-icon{width:clamp(50px,7.7vh,62px)!important;height:clamp(50px,7.7vh,62px)!important}
+.app-grid .app-icon{font-size:clamp(26px,4vh,32px)!important}
+.editing .app-tile{animation:icon-jiggle .18s ease-in-out infinite alternate!important}
+.dock-editing button{animation:icon-jiggle .18s ease-in-out infinite alternate!important}
+.drag-placeholder{display:block!important;background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;opacity:0!important;visibility:hidden!important;animation:none!important}
+.app-tile.dragging{opacity:0!important;visibility:hidden!important;outline:0!important;border:0!important;box-shadow:none!important}
+.live-drag-tile{width:70px!important;height:78px!important;background:transparent!important;border:0!important;outline:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.live-drag-tile .app-icon{width:62px!important;height:62px!important;border-radius:18px!important}
+.live-drag-tile b{top:65px!important}
