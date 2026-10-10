@@ -246,11 +246,33 @@ export default function App() {
         e.preventDefault()
         pointer.current = {x:e.clientX,y:e.clientY}
         setDragPosition({x:e.clientX,y:e.clientY})
-        const target = document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
         const source = dragSource.current.slice(5)
-        if (target && target !== source && hoverTarget.current !== target) {
-          hoverTarget.current = target
-          setDockApps(prev => { const next=[...prev],a=next.indexOf(source),b=next.indexOf(target); if(a>=0&&b>=0){const [item]=next.splice(a,1);next.splice(b,0,item)} return next })
+        const underFinger = document.elementFromPoint(e.clientX,e.clientY)
+        const dockTarget = underFinger?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
+        if (dockTarget && dockTarget !== source && hoverTarget.current !== dockTarget) {
+          hoverTarget.current = dockTarget
+          setDockApps(prev => { const next=[...prev],a=next.indexOf(source),b=next.indexOf(dockTarget); if(a>=0&&b>=0){const [item]=next.splice(a,1);next.splice(b,0,item)} return next })
+          dragTarget.current = 'dock-' + dockTarget
+          return
+        }
+        // Dragging from the dock into the home grid removes it from the dock
+        // and inserts it at the hovered slot, allowing the drop to work in either direction.
+        const gridTarget = underFinger?.closest<HTMLElement>('[data-slot]')?.dataset.slot || null
+        if (gridTarget && !gridTarget.startsWith('empty-')) {
+          setDockApps(prev => prev.filter(id => id !== source))
+          setSlots(prev => {
+            const next=[...prev]
+            const old=next.indexOf(source)
+            if(old>=0) next[old]=null
+            const targetIndex=next.indexOf(gridTarget)
+            if(targetIndex<0) return next
+            next.splice(targetIndex,0,source)
+            return next
+          })
+          dragSource.current = source
+          dragTarget.current = gridTarget
+          hoverTarget.current = null
+          return
         }
         return
       }
