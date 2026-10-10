@@ -229,54 +229,85 @@ export default function App() {
         dragTarget.current = null
         return
       }
-      if (target && target !== dragSource.current && !target.startsWith('empty-')) {
-        if (hoverTarget.current !== target) {
+      // Prefer the tile under the finger; if the finger is in a gap, use the nearest tile.
+      let targetEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]') || null
+      if (!targetEl || targetEl.dataset.slot === dragSource.current) {
+        const candidates = Array.from(document.querySelectorAll<HTMLElement>('.home-page:not([aria-hidden="true"]) .app-grid [data-slot]'))
+          .filter(el => el.dataset.slot && el.dataset.slot !== dragSource.current)
+        let best: HTMLElement | null = null
+        let bestDistance = Infinity
+        candidates.forEach(el => {
+          const r = el.getBoundingClientRect()
+          const dx = e.clientX < r.left ? r.left - e.clientX : e.clientX > r.right ? e.clientX - r.right : 0
+          const dy = e.clientY < r.top ? r.top - e.clientY : e.clientY > r.bottom ? e.clientY - r.bottom : 0
+          const distance = Math.hypot(dx, dy)
+          if (distance < bestDistance) { bestDistance = distance; best = el }
+        })
+        if (best && bestDistance < 90) targetEl = best
+      }
+      const target = targetEl?.dataset.slot || null
+      dragTarget.current = target
+      if (target && target !== dragSource.current) {
+        const from = dragSource.current
+        const isEmpty = target.startsWith('empty-')
+        const targetRect = targetEl?.getBoundingClientRect()
+        const fraction = targetRect ? (e.clientX - targetRect.left) / Math.max(1, targetRect.width) : 0.5
+        const isAppPair = !isEmpty && apps.some(a => a.id === from) && apps.some(a => a.id === target)
+        const centerFolderZone = isAppPair && fraction >= 0.32 && fraction <= 0.68
+        const zone = isEmpty ? 'empty' : centerFolderZone ? 'center' : (fraction < 0.5 ? 'left' : 'right')
+        const hoverKey = target + ':' + zone
+        if (hoverTarget.current !== hoverKey) {
           if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
-          hoverTarget.current = target
-          hoverStart.current = { x: e.clientX, y: e.clientY }
-          hoverMoved.current = false
+          hoverTarget.current = hoverKey
           folderReadyTarget.current = null
-          folderHoverTimer.current = window.setTimeout(() => {
-            const from = dragSource.current
-            if (from && hoverTarget.current === target) {
-              const isAppPair = apps.some(a => a.id === from) && apps.some(a => a.id === target)
-              const movedWhileHovering = hoverMoved.current
-              if (isAppPair && !movedWhileHovering) {
+          lastDragTarget.current = null
+          if (centerFolderZone) {
+            // Hold over the middle for 0.8 seconds to arm folder creation.
+            folderHoverTimer.current = window.setTimeout(() => {
+              if (dragSource.current === from && hoverTarget.current === hoverKey) {
                 folderReadyTarget.current = target
-              } else {
+              }
+              folderHoverTimer.current = null
+            }, 800)
+          } else {
+            // Side of an app or an empty slot: wait briefly before reordering.
+            folderHoverTimer.current = window.setTimeout(() => {
+              if (dragSource.current !== from || hoverTarget.current !== hoverKey) return
+              if (isEmpty) {
+                const destination = Number(target.slice(6))
                 setSlots(prev => {
-                  const next = [...prev], a = next.indexOf(from), b = next.indexOf(target)
-                  if (a >= 0 && b >= 0 && a !== b) { const [item] = next.splice(a, 1); next.splice(b, 0, item) }
+                  const next = [...prev]
+                  const a = next.indexOf(from)
+                  if (a < 0 || destination < 0 || destination >= next.length || a === destination) return prev
+                  const [item] = next.splice(a, 1)
+                  const adjusted = a < destination ? destination - 1 : destination
+                  next.splice(Math.max(0, Math.min(adjusted, next.length)), 0, item)
                   return next
                 })
-                lastDragTarget.current = target
-                folderReadyTarget.current = null
+              } else {
+                setSlots(prev => {
+                  const next = [...prev]
+                  const a = next.indexOf(from)
+                  const b = next.indexOf(target)
+                  if (a < 0 || b < 0 || a === b) return prev
+                  const [item] = next.splice(a, 1)
+                  let insertAt = zone === 'left' ? b : b + 1
+                  if (a < insertAt) insertAt -= 1
+                  next.splice(Math.max(0, Math.min(insertAt, next.length)), 0, item)
+                  return next
+                })
               }
-            }
-            folderHoverTimer.current = null
-          }, 260)
-        }
-        if (Math.hypot(e.clientX - hoverStart.current.x, e.clientY - hoverStart.current.y) > 5) {
-          hoverMoved.current = true
-
+              lastDragTarget.current = target
+              folderHoverTimer.current = null
+            }, isEmpty ? 180 : 240)
+          }
         }
       } else {
         if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
-        folderHoverTimer.current = null; hoverTarget.current = null; folderReadyTarget.current = null; lastDragTarget.current = null
-        if (target && target !== dragSource.current && target.startsWith('empty-')) {
-          if (folderSource.current) {
-            dragTarget.current = target
-          } else {
-            const from=dragSource.current
-            setSlots(prev => {
-              const next=[...prev], a=next.indexOf(from!), b=Number(target.slice(6))
-              if(a>=0&&b>=0&&b<next.length&&a!==b){const [item]=next.splice(a,1);next.splice(b,0,item)}
-              return next
-            })
-            lastDragTarget.current = target
-            dragTarget.current = null
-          }
-        }
+        folderHoverTimer.current = null
+        hoverTarget.current = null
+        folderReadyTarget.current = null
+        lastDragTarget.current = null
       }
       return
     }
@@ -303,19 +334,24 @@ export default function App() {
     if (Math.abs(dx) > 8) clearPress()
   }
   const touchEnd = (e: React.TouchEvent<HTMLElement>) => {
-    const dx = e.changedTouches[0].clientX - touchOrigin.current.x
-    if (startX.current !== null && Math.abs(dx) > 30) {
-      const delta = dx < 0 ? 1 : -1
-      setPage(p => Math.max(0, Math.min(pages - 1, p + delta)))
+    const touch = e.changedTouches[0]
+    if (touch) {
+      const dx = touch.clientX - touchOrigin.current.x
+      const dy = touch.clientY - touchOrigin.current.y
+      if (!edit && !dragSource.current && Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+        const delta = dx < 0 ? 1 : -1
+        setPage(p => Math.max(0, Math.min(pages - 1, p + delta)))
+      }
     }
+    clearPress()
     startX.current = null
     swipeDX.current = 0
     setSwipeOffset(0)
   }
   const pointerUp = (e?: React.PointerEvent) => {
-    // Touch gestures finish in onTouchEnd; don't reset their measurements on pointerup.
-    if (e?.pointerType === 'touch' && !dragSource.current) return
+    // Clear timers before any early return: otherwise a released finger can trigger edit mode later.
     clearPress()
+    if (e?.pointerType === 'touch' && !dragSource.current) return
     if (folderSource.current && dragSource.current) {
       if (!folderDragMoved.current) {
         folderSource.current = null; dragSource.current = null; dragTarget.current = null
@@ -346,12 +382,6 @@ export default function App() {
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
       if (folderReadyTarget.current && folderReadyTarget.current === to && apps.some(a => a.id === from) && apps.some(a => a.id === to)) {
         makeFolder(from, to)
-      } else if (to && to !== from && !to.startsWith('empty-') && lastDragTarget.current !== to) {
-        setSlots(prev => {
-          const next = [...prev], a = next.indexOf(from), b = next.indexOf(to)
-          if (a >= 0 && b >= 0) { const [item] = next.splice(a, 1); next.splice(b, 0, item) }
-          return next
-        })
       }
       folderReadyTarget.current = null
       dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
