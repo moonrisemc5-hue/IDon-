@@ -59,30 +59,21 @@ export default function App() {
         const key = el.dataset.slot
         const before = key ? layoutPositions.current.get(key) : undefined
         const after = el.getBoundingClientRect()
-        if (!before || (Math.abs(before.left-after.left)<1 && Math.abs(before.top-after.top)<1)) return
+        if (!before || (Math.abs(before.left - after.left) < 1 && Math.abs(before.top - after.top) < 1)) return
         const dx = before.left - after.left
         const dy = before.top - after.top
-        // Use the individual translate property so it does not fight the jiggle's transform animation.
-        el.style.transition = 'none'
-        el.style.translate = dx + 'px ' + dy + 'px'
-        el.style.zIndex = '3'
-      })
-      // Commit the starting offsets before asking the browser to animate them away.
-      void nodes[0]?.offsetWidth
-      if (layoutFrame.current !== null) cancelAnimationFrame(layoutFrame.current)
-      layoutFrame.current = requestAnimationFrame(() => {
-        layoutFrame.current = requestAnimationFrame(() => {
-          nodes.forEach(el => {
-            el.style.transition = 'translate .72s cubic-bezier(.16,1,.3,1)'
-            el.style.translate = '0px 0px'
-            el.style.zIndex = ''
-          })
-          layoutFrame.current = null
+        // Web Animations runs independently of the icon's shake animation.
+        el.getAnimations().forEach(animation => {
+          if (animation.id === 'home-screen-reorder') animation.cancel()
         })
+        const animation = el.animate(
+          [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'translate(0,0)' }],
+          { duration: 680, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'none' }
+        )
+        animation.id = 'home-screen-reorder'
       })
     }
     layoutPositions.current = next
-    return () => { if (layoutFrame.current !== null) cancelAnimationFrame(layoutFrame.current) }
   }, [slots, folders])
 
   const suppressSwitcherClick = useRef(false)
