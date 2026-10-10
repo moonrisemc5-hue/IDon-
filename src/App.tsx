@@ -62,6 +62,7 @@ export default function App() {
   const [folderCandidateRect, setFolderCandidateRect] = useState<{left:number;top:number;width:number;height:number} | null>(null)
   const [releasingDragId, setReleasingDragId] = useState<string | null>(null)
   const releaseTimer = useRef<number | null>(null)
+  const releaseTarget = useRef<{x:number;y:number} | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [currentApp, setCurrentApp] = useState<string | null>(null)
   const [recentApps, setRecentApps] = useState<string[]>([])
@@ -136,6 +137,24 @@ export default function App() {
     else a.pause()
   }, [playing, panel, track, volume])
   useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current); if (settleTimer.current !== null) clearTimeout(settleTimer.current); if (releaseTimer.current !== null) clearTimeout(releaseTimer.current) }, [])
+
+  useEffect(() => {
+    if (!releasingDragId || !releaseTarget.current) return
+    const el = document.querySelector<HTMLElement>('.live-drag-tile.releasing')
+    if (!el) return
+    const target = releaseTarget.current
+    const fromX = dragPosition.x
+    const fromY = dragPosition.y
+    const animation = el.animate([
+      { left: fromX + 'px', top: fromY + 'px', transform: 'translate(-50%,-60%) scale(1.08) rotate(-2deg)' },
+      { left: target.x + 'px', top: target.y + 'px', transform: 'translate(-50%,-60%) scale(1) rotate(0deg)' }
+    ], { duration: 620, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' })
+    animation.onfinish = () => {
+      setDragPosition(target)
+      releaseTarget.current = null
+    }
+    return () => { animation.cancel(); animation.onfinish = null }
+  }, [releasingDragId])
 
   const notify = (s: string) => { setToast(s); window.setTimeout(() => setToast(''), 2000) }
   const allSlots = [...slots]
@@ -430,11 +449,9 @@ export default function App() {
         if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
         if (releaseTimer.current !== null) window.clearTimeout(releaseTimer.current)
         settleTimer.current = window.setTimeout(() => { setSettlingId(null); settleTimer.current = null }, 760)
-        releaseTimer.current = window.setTimeout(() => { setReleasingDragId(null); releaseTimer.current = null }, 620)
+        releaseTimer.current = window.setTimeout(() => { setReleasingDragId(null); releaseTimer.current = null }, 680)
         // First render the release state at the finger position, then animate toward the slot.
-        if (landingPoint) window.requestAnimationFrame(() => {
-          window.requestAnimationFrame(() => setDragPosition(landingPoint))
-        })
+        releaseTarget.current = landingPoint
       }
       setFolderCandidateId(null)
       setFolderCandidateRect(null)
