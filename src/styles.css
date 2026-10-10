@@ -272,3 +272,12 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
   background:rgba(255,225,90,.2)!important;
   box-shadow:0 0 0 7px rgba(255,225,90,.25),0 0 28px rgba(255,210,42,.9)!important;
 }
+
+/* The release trajectory is controlled only by the Web Animations API.
+   CSS keyframes/transitions were competing with it and causing a vertical-then-horizontal snap. */
+.live-drag-tile.releasing{
+  animation:none!important;
+  transition:none!important;
+  transform-origin:center center!important;
+  will-change:left,top,transform!important;
+}
