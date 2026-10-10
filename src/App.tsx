@@ -433,13 +433,15 @@ export default function App() {
     if (dragSource.current) {
       const from = dragSource.current, to = dragTarget.current
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
-      // Capture the destination before the grid rerenders, then glide the floating icon into it.
-      const landingTarget = to ? Array.from(document.querySelectorAll<HTMLElement>('[data-slot]')).find(el => el.dataset.slot === to) : undefined
+      // Aim for the dragged app's own slot, not the app we hovered over.
+      const makeFolderNow = !!folderReadyTarget.current && folderReadyTarget.current === to && apps.some(a => a.id === from) && apps.some(a => a.id === to)
+      const landingKey = makeFolderNow ? to : from
+      const landingTarget = Array.from(document.querySelectorAll<HTMLElement>('[data-slot]')).find(el => el.dataset.slot === landingKey)
       const landingPoint = landingTarget ? (() => {
         const rect = landingTarget.getBoundingClientRect()
         return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
       })() : null
-      if (folderReadyTarget.current && folderReadyTarget.current === to && apps.some(a => a.id === from) && apps.some(a => a.id === to)) {
+      if (makeFolderNow) {
         makeFolder(from, to)
       }
       folderReadyTarget.current = null
@@ -500,10 +502,10 @@ export default function App() {
             const index = p * PAGE_SIZE + i
             const a = getApp(id), f = getFolder(id)
             if (!id) return <div key={'empty-' + index} className="empty-slot" data-slot={'empty-' + index} onPointerDown={startEmptyPress} onContextMenu={e => e.preventDefault()} onClick={() => { if (longPress.current) { longPress.current = false; return } if (edit) setEdit(false) }} />
-            if (f && (dragging === id || releasingDragId === id)) return <div key={id} className="drag-placeholder" aria-hidden="true" />
+            if (f && (dragging === id || releasingDragId === id)) return <div key={id} className="drag-placeholder" data-slot={id} aria-hidden="true" />
             if (f) return <button key={id} className="app-tile" data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current) setFolderOpen(id) }}><span className="folder-icon">{f.apps.slice(0,4).map(appId => { const fa = getApp(appId); return fa ? <AppMark key={appId} app={fa} compact /> : null })}</span><b>{f.name}</b></button>
             if (!a) return null
-            if (dragging === id || releasingDragId === id) return <div key={id} className="drag-placeholder" aria-hidden="true" />
+            if (dragging === id || releasingDragId === id) return <div key={id} className="drag-placeholder" data-slot={id} aria-hidden="true" />
             return <button key={id} className={'app-tile ' + (folderCandidateId === id ? 'folder-candidate ' : '') + (settlingId === id ? ' settling' : '') + (deletingId === id ? ' deleting' : '')} data-slot={id} onPointerDown={e => startAppPress(id, e)} onClick={() => { if (!edit && !longPress.current && !dragging) launch(id) }} onContextMenu={e => e.preventDefault()}>{edit && <span className="remove-app" onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setRemoveId(id) }}>−</span>}<AppMark app={a} /><b>{id === 'device' ? 'hello' : a.name}</b></button>
           })}
         </div></div>)}
