@@ -67,14 +67,18 @@ export default function App() {
         el.style.translate = dx + 'px ' + dy + 'px'
         el.style.zIndex = '3'
       })
+      // Commit the starting offsets before asking the browser to animate them away.
+      void nodes[0]?.offsetWidth
       if (layoutFrame.current !== null) cancelAnimationFrame(layoutFrame.current)
       layoutFrame.current = requestAnimationFrame(() => {
-        nodes.forEach(el => {
-          el.style.transition = 'translate .58s cubic-bezier(.2,.75,.25,1)'
-          el.style.translate = '0px 0px'
-          el.style.zIndex = ''
+        layoutFrame.current = requestAnimationFrame(() => {
+          nodes.forEach(el => {
+            el.style.transition = 'translate .72s cubic-bezier(.16,1,.3,1)'
+            el.style.translate = '0px 0px'
+            el.style.zIndex = ''
+          })
+          layoutFrame.current = null
         })
-        layoutFrame.current = null
       })
     }
     layoutPositions.current = next
