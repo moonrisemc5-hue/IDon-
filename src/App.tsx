@@ -248,7 +248,8 @@ export default function App() {
         pointer.current = {x:e.clientX,y:e.clientY}
         setDragPosition({x:e.clientX,y:e.clientY})
         const source = dragSource.current.slice(5)
-        const underFinger = document.elementFromPoint(e.clientX,e.clientY)
+        // Ignore the floating drag ghost when hit-testing so the dock underneath remains targetable.
+        const underFinger = document.elementsFromPoint(e.clientX,e.clientY).find(el => !(el as HTMLElement).closest('.live-drag-tile'))
         const dockTarget = underFinger?.closest<HTMLElement>('[data-dock]')?.dataset.dock || null
         if (dockTarget && dockTarget !== source && hoverTarget.current !== dockTarget) {
           hoverTarget.current = dockTarget
@@ -259,12 +260,18 @@ export default function App() {
         // Dragging from the dock into the home grid removes it from the dock
         // and inserts it at the hovered slot, allowing the drop to work in either direction.
         const gridTarget = underFinger?.closest<HTMLElement>('[data-slot]')?.dataset.slot || null
-        if (gridTarget && !gridTarget.startsWith('empty-')) {
+        if (gridTarget) {
+          const emptyIndex = gridTarget.startsWith('empty-') ? Number(gridTarget.slice(6)) : -1
           setDockApps(prev => prev.filter(id => id !== source))
           setSlots(prev => {
             const next=[...prev]
             const old=next.indexOf(source)
             if(old>=0) next[old]=null
+            if (emptyIndex >= 0) {
+              while (next.length <= emptyIndex) next.push(null)
+              next[emptyIndex] = source
+              return next
+            }
             const targetIndex=next.indexOf(gridTarget)
             if(targetIndex<0) return next
             next.splice(targetIndex,0,source)
