@@ -37,6 +37,7 @@ export default function App() {
   const [settlingId, setSettlingId] = useState<string | null>(null)
   const settleTimer = useRef<number | null>(null)
   const [folderCandidateId, setFolderCandidateId] = useState<string | null>(null)
+  const [folderCandidateRect, setFolderCandidateRect] = useState<{left:number;top:number;width:number;height:number} | null>(null)
   const [releasingDragId, setReleasingDragId] = useState<string | null>(null)
   const releaseTimer = useRef<number | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -137,6 +138,7 @@ export default function App() {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     longPress.current = false
     pointer.current = { x: e.clientX, y: e.clientY }
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
     pressTimer.current = window.setTimeout(() => {
       longPress.current = true
       setEdit(true)
@@ -256,8 +258,12 @@ export default function App() {
         const targetRect = targetEl?.getBoundingClientRect()
         const fraction = targetRect ? (e.clientX - targetRect.left) / Math.max(1, targetRect.width) : 0.5
         const isAppPair = !isEmpty && apps.some(a => a.id === from) && apps.some(a => a.id === target)
-        const centerFolderZone = isAppPair && fraction >= 0.32 && fraction <= 0.68
+        const centerFolderZone = isAppPair && fraction >= 0.25 && fraction <= 0.75
         setFolderCandidateId(centerFolderZone ? target : null)
+        setFolderCandidateRect(centerFolderZone && targetRect ? {
+          left: targetRect.left - 5, top: targetRect.top - 5,
+          width: targetRect.width + 10, height: targetRect.height + 10
+        } : null)
         const zone = isEmpty ? 'empty' : centerFolderZone ? 'center' : (fraction < 0.5 ? 'left' : 'right')
         const hoverKey = target + ':' + zone
         if (hoverTarget.current !== hoverKey) {
@@ -312,6 +318,7 @@ export default function App() {
         hoverTarget.current = null
         folderReadyTarget.current = null
         setFolderCandidateId(null)
+        setFolderCandidateRect(null)
         lastDragTarget.current = null
       }
       return
@@ -387,10 +394,10 @@ export default function App() {
       if (from.startsWith('dock-')) { dragSource.current=null; dragTarget.current=null; hoverTarget.current=null; setDragging(null); return }
       // Capture the destination before the grid rerenders, then glide the floating icon into it.
       const landingTarget = to ? Array.from(document.querySelectorAll<HTMLElement>('[data-slot]')).find(el => el.dataset.slot === to) : undefined
-      if (landingTarget) {
+      const landingPoint = landingTarget ? (() => {
         const rect = landingTarget.getBoundingClientRect()
-        setDragPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
-      }
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      })() : null
       if (folderReadyTarget.current && folderReadyTarget.current === to && apps.some(a => a.id === from) && apps.some(a => a.id === to)) {
         makeFolder(from, to)
       }
@@ -401,9 +408,14 @@ export default function App() {
         if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
         if (releaseTimer.current !== null) window.clearTimeout(releaseTimer.current)
         settleTimer.current = window.setTimeout(() => { setSettlingId(null); settleTimer.current = null }, 760)
-        releaseTimer.current = window.setTimeout(() => { setReleasingDragId(null); releaseTimer.current = null }, 340)
+        releaseTimer.current = window.setTimeout(() => { setReleasingDragId(null); releaseTimer.current = null }, 620)
+        // First render the release state at the finger position, then animate toward the slot.
+        if (landingPoint) window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => setDragPosition(landingPoint))
+        })
       }
       setFolderCandidateId(null)
+      setFolderCandidateRect(null)
       dragSource.current = null; dragTarget.current = null; hoverTarget.current = null
       if (folderHoverTimer.current) clearTimeout(folderHoverTimer.current)
       if (pageFlipTimer.current) clearTimeout(pageFlipTimer.current)
@@ -457,6 +469,7 @@ export default function App() {
           })}
         </div></div>)}
       </div>
+      {folderCandidateRect && dragging && <div className="folder-target-highlight" aria-hidden="true" style={{left:folderCandidateRect.left,top:folderCandidateRect.top,width:folderCandidateRect.width,height:folderCandidateRect.height}} />}
       {(dragging || releasingDragId) && <button className={'app-tile live-drag-tile' + (releasingDragId ? ' releasing' : '')} style={{left:dragPosition.x,top:dragPosition.y}} onPointerDown={e=>e.preventDefault()}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || '')) ? <><span className={'app-icon '+getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.tone}>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.icon}</span><b>{getApp((dragging || releasingDragId || '').startsWith('dock-')?(dragging || releasingDragId || '').slice(5):(dragging || releasingDragId || ''))!.name}</b></> : getFolder(dragging || releasingDragId || '') ? <><span className="folder-icon">{getFolder(dragging || releasingDragId || '')!.apps.slice(0,4).map(appId=>{const fa=getApp(appId);return fa?<i key={appId} className={'folder-mini '+fa.tone}>{fa.icon}</i>:null})}</span><b>{getFolder(dragging || releasingDragId || '')!.name}</b></> : null}</button>}
       <div className="page-indicators">{Array.from({ length: pages }, (_, i) => <button key={i} className={i === page ? 'active' : ''} aria-label={'Page ' + (i + 1)} onClick={() => setPage(i)} />)}</div>
       {edit && <div className="edit-actions"><button onClick={addPage}>＋ Add page</button>{page > 0 && <button onClick={removePage}>− Remove page</button>}<span className="edit-hint">Tap an empty spot to finish</span></div>}
