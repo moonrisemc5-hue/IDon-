@@ -23,22 +23,22 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .app-grid{width:100%;height:100%;max-width:520px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));gap:5px 7px;align-content:stretch}
 .app-tile{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:0 2px;border:0;background:transparent;border-radius:17px;text-align:center;touch-action:none;user-select:none;-webkit-user-select:none;overflow:visible}
 .app-tile b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:570;letter-spacing:0;color:#fff;text-shadow:0 1px 8px #0008;line-height:13px;flex:0 0 13px}
-.app-icon{width:clamp(42px,6.7vh,54px);height:clamp(42px,6.7vh,54px);display:grid;place-items:center;flex:0 0 auto;border-radius:15px;font-size:clamp(21px,3.5vh,27px);font-weight:650;line-height:1;color:white;box-shadow:0 7px 19px #0003,inset 0 1px #ffffff35;position:relative;overflow:hidden}
+.app-icon{width:clamp(48px,7.5vh,62px);height:clamp(48px,7.5vh,62px);display:grid;place-items:center;flex:0 0 auto;border-radius:17px;font-size:clamp(24px,3.9vh,31px);font-weight:650;line-height:1;color:white;box-shadow:0 7px 19px #0003,inset 0 1px #ffffff35;position:relative;overflow:hidden}
 .app-icon:before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,#ffffff2a,transparent 56%);pointer-events:none}
 .app-icon.gold{background:linear-gradient(145deg,#f9c95f,#c87826)}
 .app-icon.blue{background:linear-gradient(145deg,#70b9ff,#3155b8)}
 .app-icon.pink{background:linear-gradient(145deg,#ff8ac6,#9c42b7)}
 .app-icon.grey{background:linear-gradient(145deg,#9ba9bd,#46546c)}
 .app-icon.green{background:linear-gradient(145deg,#77e7bd,#168a7b)}
-.folder-icon{width:clamp(42px,6.7vh,54px);height:clamp(42px,6.7vh,54px);padding:6px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4px;border-radius:17px;background:#ffffff21;border:1px solid #ffffff26;box-shadow:0 7px 19px #0003,inset 0 1px #ffffff30;backdrop-filter:blur(12px)}
+.folder-icon{width:clamp(48px,7.5vh,62px);height:clamp(48px,7.5vh,62px);padding:7px;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:4px;border-radius:18px;background:#ffffff21;border:1px solid #ffffff26;box-shadow:0 7px 19px #0003,inset 0 1px #ffffff30;backdrop-filter:blur(12px)}
 .folder-mini{display:grid;place-items:center;border-radius:6px;font-style:normal;font-size:13px;font-weight:700}
 .folder-mini.gold{background:linear-gradient(145deg,#f9c95f,#c87826)}.folder-mini.blue{background:linear-gradient(145deg,#70b9ff,#3155b8)}.folder-mini.pink{background:linear-gradient(145deg,#ff8ac6,#9c42b7)}.folder-mini.grey{background:linear-gradient(145deg,#9ba9bd,#46546c)}.folder-mini.green{background:linear-gradient(145deg,#77e7bd,#168a7b)}
-.editing .app-tile{animation:icon-jiggle .32s ease-in-out infinite alternate;transform-origin:50% 50%;transition:margin .42s cubic-bezier(.22,.8,.25,1),filter .38s,opacity .35s}
+.editing .app-tile{animation:icon-jiggle .19s ease-in-out infinite alternate;transform-origin:50% 50%;transition:translate .58s cubic-bezier(.2,.75,.25,1),filter .38s,opacity .35s}
 .editing .app-tile:nth-child(3n){animation-delay:-.13s}.editing .app-tile:nth-child(2n){animation-delay:-.07s}
-@keyframes icon-jiggle{from{transform:rotate(-1deg)}to{transform:rotate(1deg)}}
+@keyframes icon-jiggle{from{transform:rotate(-1.7deg)}to{transform:rotate(1.7deg)}}
 @keyframes lift-icon{from{opacity:.6;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-58%) scale(1.08) rotate(-2deg)}}
-.app-tile:not(.dragging){transition:transform .42s cubic-bezier(.22,.8,.25,1),filter .38s}
-.app-grid .app-tile{transition:transform .44s cubic-bezier(.22,.8,.25,1),filter .4s,opacity .38s}
+.app-tile:not(.dragging){transition:translate .58s cubic-bezier(.2,.75,.25,1),transform .28s cubic-bezier(.2,.8,.2,1),filter .38s}
+.app-grid .app-tile{transition:translate .58s cubic-bezier(.2,.75,.25,1),transform .28s cubic-bezier(.2,.8,.2,1),filter .4s,opacity .38s}
 .app-tile:active .app-icon{filter:brightness(1.08)}
 .remove-app{transition:transform .18s cubic-bezier(.2,.8,.2,1),background .18s}.remove-app:active{transform:scale(.8)}
 .remove-confirm{transition:transform .18s,opacity .18s}.confirm-window{animation:window-pop .38s cubic-bezier(.22,.8,.25,1) both}
@@ -58,7 +58,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .edit-actions .done,.done{background:#f4f6ff;color:#1a2133;border-color:#ffffff}
 .dock{position:relative;z-index:2;align-self:center;width:min(calc(100% - 42px),410px);min-height:70px;margin:6px auto max(10px,env(safe-area-inset-bottom));padding:8px 16px;display:flex;align-items:center;justify-content:space-around;gap:13px;border-radius:27px;background:#ffffff1b;border:1px solid #ffffff2a;box-shadow:0 12px 35px #0002,inset 0 1px #ffffff18;backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%)}
 .dock button{padding:0;border:0;background:transparent;display:grid;place-items:center;border-radius:17px;transition:transform .32s cubic-bezier(.22,.8,.25,1)}
-.dock button:active{transform:scale(.9)}.dock .app-icon{width:47px;height:47px;border-radius:14px;font-size:23px}
+.dock button:active{transform:scale(.9)}.dock .app-icon{width:51px;height:51px;border-radius:15px;font-size:25px}
 .veil{position:fixed;inset:0;z-index:40;background:#05081491;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);display:flex;align-items:center;justify-content:center;padding:24px 18px}
 .folder-window,.panel-window,.control-window,.confirm-window{width:min(100%,440px);max-height:min(80vh,740px);overflow:auto;border:1px solid #ffffff28;border-radius:28px;background:linear-gradient(145deg,#252b40f5,#161c30f5);box-shadow:0 28px 90px #0008,inset 0 1px #ffffff1b;color:#f8f9ff}
 .folder-window{width:min(100%,360px);padding:18px}
@@ -67,7 +67,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .folder-window header button:first-child{width:auto;height:auto;border-radius:11px;padding:8px 10px;font-size:11px}
 .folder-apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 8px;padding:24px 4px 8px}
 .folder-apps button{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:transparent;min-width:0}
-.folder-apps .app-icon{width:52px;height:52px;border-radius:15px;font-size:26px}.folder-apps b{font-size:11px;font-weight:550;white-space:nowrap}
+.folder-apps .app-icon{width:56px;height:56px;border-radius:16px;font-size:28px}.folder-apps b{font-size:11px;font-weight:550;white-space:nowrap}
 .panel-window{padding:20px 20px 22px}.panel-window header{padding-bottom:16px}.panel-window header>div{display:flex;flex-direction:column;gap:4px}.panel-window header b,.folder-window header b,.control-window header b{font-size:17px}.panel-window header small{font-size:11px;color:#ffffff89}
 .panel-content{padding-top:19px}.panel-content h3,.confirm-window h3{font-size:15px;margin:0 0 8px}.panel-content p,.confirm-window p{font-size:12px;line-height:1.6;color:#c2c9dc;margin:0 0 15px}
 .wallpaper-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -142,8 +142,8 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 .page-indicators button{transition:width .38s cubic-bezier(.22,.8,.25,1),background .38s}
 
 /* Slower, more deliberate iPhone-style organizing */
-.app-grid .app-tile,.empty-slot,.drag-placeholder,.folder-apps button,.dock button{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .38s ease,filter .38s ease,margin .42s cubic-bezier(.22,.8,.25,1)}
-.drag-placeholder{background:#ffffff14;border-color:#c6d8ff66;transform:scale(.98)}
+.app-grid .app-tile,.empty-slot,.drag-placeholder,.folder-apps button,.dock button{transition:translate .58s cubic-bezier(.2,.75,.25,1),transform .3s cubic-bezier(.2,.8,.2,1),opacity .48s ease,filter .38s ease}
+.drag-placeholder{background:#ffffff14;border-color:#c6d8ff66;transform:scale(.96);animation:slot-expand .42s cubic-bezier(.2,.8,.2,1) both}
 .recent-card{transition:transform .42s cubic-bezier(.22,.8,.25,1),opacity .38s ease}
 
 /* Bottom-edge gestures must win over embedded content on touch screens. */
@@ -154,3 +154,10 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
 
 /* The temporary navigation menu must sit above the swipe hit-area. */
 .app-fullscreen .app-nav-controls{z-index:70}
+
+/* iPhone-style lively rearrangement and drop feedback */
+.app-tile.settling{animation:icon-land .56s cubic-bezier(.18,.8,.2,1) both!important}
+@keyframes icon-land{0%{scale:1.08;rotate:-2deg}42%{scale:.91;rotate:1.2deg}72%{scale:1.035;rotate:-.45deg}100%{scale:1;rotate:0deg}}
+.editing .app-tile.settling{animation:icon-land-edit .56s cubic-bezier(.18,.8,.2,1) both!important}
+@keyframes icon-land-edit{0%{scale:1.08;rotate:-2deg}42%{scale:.92;rotate:1.2deg}72%{scale:1.035;rotate:-.45deg}100%{scale:1;rotate:0deg}}
+.app-grid .app-tile,.app-grid .empty-slot,.app-grid .drag-placeholder{will-change:translate,transform,opacity}
