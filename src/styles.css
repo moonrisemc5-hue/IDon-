@@ -229,3 +229,46 @@ button:focus-visible,input:focus-visible{outline:2px solid #b8d8ff;outline-offse
   transition:left .62s cubic-bezier(.16,1,.3,1),top .62s cubic-bezier(.16,1,.3,1),opacity .62s ease!important;
   animation:drag-release-settle .62s cubic-bezier(.16,1,.3,1) both!important;
 }
+
+/* Custom DaBoys app marks: solid black with vivid yellow iconography. */
+.app-icon.brand-economy,.app-icon.brand-court{
+  background:#050505!important;
+  color:#ffd52a!important;
+  border:1px solid #ffd52a!important;
+  box-shadow:0 0 0 1px #000,0 6px 16px #0005!important;
+}
+.app-icon.brand-economy svg,.app-icon.brand-court svg{
+  display:block;width:74%;height:74%;overflow:visible;color:#ffd52a;
+}
+.folder-mini.brand-economy,.folder-mini.brand-court{
+  background:#050505!important;color:#ffd52a!important;border:1px solid #ffd52a!important;
+  display:grid;place-items:center;overflow:hidden;
+}
+.folder-mini.brand-economy svg,.folder-mini.brand-court svg{display:block;width:90%;height:90%;color:#ffd52a}
+.live-drag-tile .app-icon.brand-economy,.live-drag-tile .app-icon.brand-court{background:#050505!important;color:#ffd52a!important}
+
+/* Use the app tile itself as the folder-target signal; it remains inside the same stacking context. */
+.app-tile.folder-candidate{
+  z-index:100!important;
+  outline:3px solid #ffe15a!important;
+  outline-offset:4px!important;
+  background:rgba(255,225,90,.13)!important;
+  border-radius:22px!important;
+  box-shadow:0 0 0 8px rgba(255,225,90,.22),0 0 24px rgba(255,210,42,.7)!important;
+  animation:folder-target-pulse .5s ease-in-out infinite alternate!important;
+}
+.app-tile.folder-candidate::after{
+  content:'';
+  position:absolute;inset:-8px;border:2px solid #ffe15a;border-radius:23px;
+  pointer-events:none;opacity:.95;
+}
+@keyframes folder-target-pulse{
+  from{scale:1.025;filter:brightness(1.02)}
+  to{scale:1.09;filter:brightness(1.2)}
+}
+.folder-target-highlight{
+  z-index:99999!important;
+  border:3px solid #ffe15a!important;
+  background:rgba(255,225,90,.2)!important;
+  box-shadow:0 0 0 7px rgba(255,225,90,.25),0 0 28px rgba(255,210,42,.9)!important;
+}
